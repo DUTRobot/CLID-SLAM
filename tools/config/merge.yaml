@@ -1,0 +1,4 @@
+input_folder: 'xxxxxx'
+output_folder: 'xxxxxx'
+outbag_name: 'output.bag'
+verbose: True
