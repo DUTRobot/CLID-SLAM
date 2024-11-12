@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# @file      merge_bag.py
+# @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
+# Copyright (c) 2024 Junlong Jiang, all rights reserved
 
 import os
 
@@ -21,13 +24,13 @@ def merge(config):
     if config["verbose"]:
         print("Writing bag file: " + outbag_name)
 
-    with Bag(os.path.join(output_folder, outbag_name), 'w') as o:
+    with Bag(os.path.join(output_folder, outbag_name), 'w') as ob:
         for ifile in input_bags:
             if config["verbose"]:
                 print("> Reading bag file: " + ifile)
             with Bag(os.path.join(input_folder, ifile), 'r') as ib:
                 for topic, msg, t in ib:
-                    o.write(topic, msg, t)
+                    ob.write(topic, msg, t)
 
 
 if __name__ == "__main__":

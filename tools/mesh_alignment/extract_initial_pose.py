@@ -1,5 +1,11 @@
+#!/usr/bin/env python3
+# @file      extract_initial_pose.py
+# @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
+# Copyright (c) 2024 Junlong Jiang, all rights reserved
+
 import numpy as np
-from utils.tools import quaternion_to_rotation_matrix
+from tools.quat2rot import quaternion_to_rotation_matrix
+
 ################################# for quad
 # ImMesh
 # matrix_values = [
@@ -15,7 +21,6 @@ from utils.tools import quaternion_to_rotation_matrix
 #                         [0, 0, 0, 1]])
 #
 # T = T_lidar @ T_lidar_imu
-
 
 ################################# for math easy
 T_lidar = np.eye(4)
