@@ -6,6 +6,12 @@ For more details, please refer to the [paper](https://ieeexplore.ieee.org/abstra
 
 The code for this project will be open-sourced soon! 🛠️ However, it will take some time to reorganize and thoroughly test the code. During this period, I will be uploading the core components and essential code gradually for you to explore and review. Thank you for your patience and support! 🙏
 
+## TODO 📝
+
+- [ ] **Upload Core Code**: Gradually uploading the essential and core components of the project for early review. 🔑  
+- [ ] **Upload Full Code**: Once fully tested and organized, the complete code will be made available for everyone. 📂  
+- [ ] **Improve README**: The README will be updated with detailed documentation and usage instructions. 📚
+
 ## Timeline 📅
 
 - **2024.10.26** – **Received** ✅  
