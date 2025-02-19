@@ -25,12 +25,12 @@ The code for this project will be open-sourced soon! 🛠️ However, it will ta
 
 ## Acknowledgements 🙏
 
-This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication! 🎉
+This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication!
 
 ## Datasets 📚
 
 - [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/)  
 - [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
 
-These datasets provided invaluable resources for the success of this project. 🚀
+These datasets provided invaluable resources for the success of this project.
 
