@@ -1,5 +1,11 @@
 # CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation
-[paper](https://ieeexplore.ieee.org/abstract/document/10884955)
+
+For more details, please refer to the paper: [**CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation**](https://ieeexplore.ieee.org/abstract/document/10884955).
+
+## Upcoming Open Source 🚀
+
+The code for this project will be open-sourced soon! 🛠️ However, it will take some time to reorganize and thoroughly test the code. During this period, I will be uploading the core components and essential code gradually for you to explore and review. Thank you for your patience and support! 🙏
+
 ## Timeline 📅
 
 - **2024.10.26** – **Received** ✅  
