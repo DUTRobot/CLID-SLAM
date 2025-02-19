@@ -1,6 +1,6 @@
 # CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation
 
-For more details, please refer to the paper: [**CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation**](https://ieeexplore.ieee.org/abstract/document/10884955).
+For more details, please refer to the  [paper](https://ieeexplore.ieee.org/abstract/document/10884955).
 
 ## Upcoming Open Source 🚀
 
