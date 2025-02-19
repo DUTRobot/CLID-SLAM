@@ -1,14 +1,5 @@
 # CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation
 [paper](https://ieeexplore.ieee.org/abstract/document/10884955)
-## Timeline
-2024.10.26 Received
-2024.10.28 Under Review
-2024.12.8 Decision Pending
-2024.12.9 Revise and Resubmit
-2025.1.7 Resubmit
-2025.1.28 Accepted
-2025.2.10 Final MS received
-2022.2.11  Forwarded to publisher
 ## Timeline 📅
 
 - **2024.10.26** – **Received** ✅  
