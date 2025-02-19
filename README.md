@@ -19,7 +19,7 @@ The code for this project will be open-sourced soon! 🛠️ However, it will ta
 
 ## Acknowledgements 🙏
 
-This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of PIN-SLAM for their outstanding work and dedication! 🎉
+This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication! 🎉
 
 ## Datasets 📚
 
