@@ -11,11 +11,14 @@
 - **2025.2.10** – **Final Manuscript Received** 📄  
 - **2025.2.11** – **Forwarded to Publisher** 🚀
 
-## Acknowledgements
+## Acknowledgements 🙏
 
-This project is built upon the open-source project [PIN-SLAM](https://github.com/PRBonn/PIN_SLAM), developed by [PRBonn/YuePanEdward](https://github.com/YuePanEdward). Special thanks to the contributors of PIN-SLAM for their great work!
+This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of PIN-SLAM for their outstanding work and dedication! 🎉
 
-## Dataset
-[Newer College Dataset](https://ori-drs.github.io/newer-college-dataset/)
+## Datasets 📚
 
-[SubT-MRS Dataset](https://superodometry.com/iccv23_challenge_LiI)
+- [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/)  
+- [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
+
+These datasets provided invaluable resources for the success of this project. 🚀
+
