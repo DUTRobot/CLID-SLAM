@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# @file      extract_initial_pose.py
-# @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
-# Copyright (c) 2024 Junlong Jiang, all rights reserved
 
 import numpy as np
 from tools.quat2rot import quaternion_to_rotation_matrix

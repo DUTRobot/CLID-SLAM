@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# @file      SubT_MRS_pose_format_convert.py
-# @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
-# Copyright (c) 2024 Junlong Jiang, all rights reserved
 import csv
 
 input_file = './dataset/SubT_MRS/SubT_MRS_Urban_Challenge_UGV2/poses/ground_truth_path.csv'

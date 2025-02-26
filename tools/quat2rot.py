@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# @file      quat2rot.py
-# @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
-# Copyright (c) 2024 Junlong Jiang, all rights reserved
 import numpy as np
 
 def quaternion_to_rotation_matrix(qx, qy, qz, qw):

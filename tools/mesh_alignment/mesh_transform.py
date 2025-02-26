@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# @file      mesh_transform.py
-# @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
-# Copyright (c) 2024 Junlong Jiang, all rights reserved
+
 import os
 import sys
 
