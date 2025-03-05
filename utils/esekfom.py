@@ -19,8 +19,8 @@ G_m_s2 = 9.81  # 定义全局重力加速度
 
 class StateIkfom:
     """
-    24维的状态量x定义
-    对应顺序为速度(3)，角速度(3), 外参平移T(3),  外参旋转R(3)，加速度(3), 角速度偏置(3), 加速度偏置(3), 位置(3)
+    18维的状态量x定义
+    对应顺序为旋转(3), 位置(3), 速度(3), 角速度偏置(3), 加速度偏置(3), 重力向量(3)
     """
 
     def __init__(
@@ -99,7 +99,7 @@ def boxminus(x1: StateIkfom, x2: StateIkfom):
     return delta
 
 
-class ESEKF:
+class IESEKF:
     """扩展卡尔曼滤波器类"""
 
     def __init__(

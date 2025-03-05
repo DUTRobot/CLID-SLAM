@@ -2,6 +2,9 @@
 # @file      mapper.py
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 # Copyright (c) 2024 Yue Pan, all rights reserved
+# Modifications by:
+# Junlong Jiang [jiangjunlong@mail.dlut.edu.cn]
+# Copyright (c) 2025 Junlong Jiang, all rights reserved.
 
 import math
 import sys
@@ -13,7 +16,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from dataset.slam_dataset import SLAMDataset
+from utils.slam_dataset import SLAMDataset
 from model.decoder import Decoder
 from model.neural_points import NeuralPoints
 from utils.config import Config
@@ -23,7 +26,7 @@ from utils.tools import get_gradient, setup_optimizer, setup_optimizer_geo, tran
     transform_torch, get_time
 
 
-class AccurateMapper:
+class Mapper:
     def __init__(
             self,
             config: Config,
