@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import numpy as np
 
+# 四元数转旋转矩阵
+
 def quaternion_to_rotation_matrix(qx, qy, qz, qw):
     """
     将四元数转换为旋转矩阵。

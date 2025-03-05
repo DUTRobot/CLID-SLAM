@@ -3,6 +3,8 @@
 import numpy as np
 from tools.quat2rot import quaternion_to_rotation_matrix
 
+# 计算第一帧位姿
+
 ################################# for quad
 # ImMesh
 # matrix_values = [

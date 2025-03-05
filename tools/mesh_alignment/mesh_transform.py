@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import open3d as o3d
 
+# 将Mesh与真值Mesh对齐
 
 def mesh_transform():
     mesh_file = "./math_easy.ply"

@@ -4,6 +4,7 @@ import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 
+# 用于可视化播放轨迹
 
 def read_tum_file(filename):
     poses = []

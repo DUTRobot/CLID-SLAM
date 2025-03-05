@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import csv
 
+# 该文件的作用是将csv格式转换为标准的tum位姿格式
 input_file = './dataset/SubT_MRS/SubT_MRS_Urban_Challenge_UGV2/poses/ground_truth_path.csv'
 output_file = './dataset/SubT_MRS/SubT_MRS_Urban_Challenge_UGV2/poses/gt_poses_tum.txt'
 

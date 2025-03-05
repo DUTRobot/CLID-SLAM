@@ -3,6 +3,8 @@ import os
 import yaml
 from rosbag import Bag
 
+# 该文件的作用将一个文件夹下多个bag合并为一个bag包
+
 
 def load_config(path):
     with open(path, 'r') as file:

@@ -4,6 +4,7 @@ import sys
 
 import open3d as o3d
 
+# 可视化已经保存的PLY文件
 
 def vis_mesh():
     mesh_file = "./ours_mesh_20cm.ply"
