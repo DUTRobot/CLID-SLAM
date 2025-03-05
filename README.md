@@ -5,8 +5,8 @@ For more details, please refer to the [paper](https://ieeexplore.ieee.org/abstra
 ## TODO 📝
 
 - [x] **Upload Core Code**
-- [ ] **Upload Full Code**: Once fully tested and organized, the complete code will be made available for everyone. 📂  
-- [ ] **Improve README**: The README will be updated with detailed documentation and usage instructions. 📚
+- [ ] **Upload Full Code**
+- [ ] **Improve README**
 
 ## Timeline 📅
 
@@ -18,6 +18,37 @@ For more details, please refer to the [paper](https://ieeexplore.ieee.org/abstra
 - **2025.1.28** – **Accepted** 🎉  
 - **2025.2.10** – **Final Manuscript Received** 📄  
 - **2025.2.11** – **Forwarded to Publisher** 🚀
+
+## Installation
+
+### Platform requirement
+* Ubuntu OS (tested on 20.04)
+
+* With GPU (recommended) or CPU only (run much slower)
+
+* GPU memory requirement (> 6 GB recommended)
+
+* Windows/MacOS with CPU-only mode
+
+
+### 1. Set up conda environment
+
+```
+conda create --name slam python=3.8
+conda activate slam
+```
+
+### 2. Install the key requirement PyTorch
+
+```
+conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia 
+```
+
+### 3. Install other dependency
+
+```
+pip3 install -r requirements.txt
+```
 
 ## Acknowledgements 🙏
 
