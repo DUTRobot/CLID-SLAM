@@ -1,0 +1,4 @@
+input_folder: 'xxxxxx'        # rosbag folder path
+output_folder: 'xxxxxx'       # the path of the merged rosbag
+outbag_name: 'output.bag'     # the name of the merged rosbag
+verbose: True                 # pring log or not
