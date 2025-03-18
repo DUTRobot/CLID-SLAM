@@ -1,6 +1,11 @@
-# CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation
-
-For more details, please refer to the [paper](https://ieeexplore.ieee.org/abstract/document/10884955).
+<p align="center">
+  <h1 align="center">⚔️CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation</h1>
+  <p align="center">
+    <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54" /></a>
+    <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black" /></a>
+    <a href="https://ieeexplore.ieee.org/abstract/document/10884955"><img src="https://img.shields.io/badge/Paper-pdf-<COLOR>.svg?style=flat-square" /></a>
+  </p>
+</p>
 
 ## TODO 📝
 
@@ -8,56 +13,57 @@ For more details, please refer to the [paper](https://ieeexplore.ieee.org/abstra
 - [ ] Enhance and update the README file
 - [ ] Include the mathematical theory derivations
 
-## Timeline 📅
-
-- **2024.10.26** – **Received** ✅  
-- **2024.10.28** – **Under Review** 🔍  
-- **2024.12.8** – **Decision Pending** ⏳  
-- **2024.12.9** – **Revise and Resubmit** ✍️  
-- **2025.1.8** – **Resubmit** 🔄  
-- **2025.1.28** – **Accepted** 🎉  
-- **2025.2.10** – **Final Manuscript Received** 📄  
-- **2025.2.11** – **Forwarded to Publisher** 🚀
-
 ## Installation
 
-### Platform requirement
-* Ubuntu OS (tested on 20.04)
+### Platform Requirements
+- Ubuntu 20.04
+- GPU (tested on RTX 4090)
 
-* With GPU (recommended) or CPU only (run much slower)
+### Steps
+1. **Clone the repository**
+    ```bash
+    git clone git@github.com:DUTRobot/CLID-SLAM.git
+    cd CLID-SLAM
+    ```
+   
+2. **Create Conda Environment**
+   ```bash
+   conda create -n slam python=3.12
+   conda activate slam
+   ```
 
-* GPU memory requirement (> 6 GB recommended)
+3. **Install PyTorch**
+   ```bash
+   pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+   ```
 
-* Windows/MacOS with CPU-only mode
+4. **Install ROS Dependencies**
+   ```bash
+   sudo apt install ros-noetic-rosbag ros-noetic-sensor-msgs
+   ```
 
+5. **Install Other Dependencies**
+   ```bash
+   pip3 install -r requirements.txt
+   ```
 
-### 1. Set up conda environment
+## Data Preparation
 
+### Download ROSbag Files
+Download these essential ROSbag datasets:
+- [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/)
+- [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
+
+### Convert to Sequences
+1. Edit `./dataset/converter/config/rosbag2dataset.yaml`.
+2. Run:
+   ```bash
+   python3 ./dataset/converter/rosbag2dataset_parallel.py
+
+## Run CLID-SLAM
+```bash
+python3 slam.py ./config/run_ncd128.yaml
 ```
-conda create --name slam python=3.8
-conda activate slam
-```
-
-### 2. Install the key requirement PyTorch
-
-```
-conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia 
-```
-
-### 3. Install other dependency
-
-```
-pip3 install -r requirements.txt
-```
-
 ## Acknowledgements 🙏
 
 This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication!
-
-## Datasets 📚
-
-- [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/)  
-- [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
-
-These datasets provided invaluable resources for the success of this project.
-
