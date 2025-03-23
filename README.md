@@ -39,14 +39,12 @@ conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=
 pip3 install -r requirements.txt
 ```
 
-## Acknowledgements 🙏
-
-This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication!
-
 ## Datasets 📚
-
+These datasets provided invaluable resources for the success of this project：
 - [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/)  
 - [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
 
-These datasets provided invaluable resources for the success of this project.
+## Acknowledgements 🙏
+
+This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication!
 
