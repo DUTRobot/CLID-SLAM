@@ -347,10 +347,10 @@ class SLAMDataset(Dataset):
                 i_in = InputIkfom(self.config.tran_dtype, data[1:4], data[4:7])
                 self.kf_state.predict(i_in, dt)
 
-            pose_propagation = np.eye(4)
-            pose_propagation[:3, :3] = self.kf_state.x.rot.cpu().numpy()
-            pose_propagation[:3, 3] = self.kf_state.x.pos.cpu().numpy()
-            self.last_odom_tran = inv(self.last_pose_ref) @ pose_propagation
+            cur_pose_init_guess = np.eye(4)
+            cur_pose_init_guess[:3, :3] = self.kf_state.x.rot.cpu().numpy()
+            cur_pose_init_guess[:3, 3] = self.kf_state.x.pos.cpu().numpy()
+            self.last_odom_tran = inv(self.last_pose_ref) @ cur_pose_init_guess
 
         if self.config.adaptive_range_on:
             # 获取点云的正向和负向边界
