@@ -26,7 +26,7 @@ from tqdm import tqdm
 
 from utils.eval_traj_utils import absolute_error, plot_trajectories, relative_error
 from utils.config import Config
-from utils.esekfom import InputIkfom
+from utils.error_state_iekf import InputIkfom
 from utils.semantic_kitti_utils import sem_kitti_color_map, sem_map_function
 from utils.tools import (
     deskewing,
@@ -68,11 +68,11 @@ class SLAMDataset(Dataset):
                 topic=config.data_loader_seq,
             )
             config.end_frame = min(len(self.loader), config.end_frame)
-            used_frame_count = int((config.end_frame - config.begin_frame) / config.every_frame)
+            used_frame_count = int((config.end_frame - config.begin_frame) / config.step_frame)
             self.total_pc_count = used_frame_count
             max_frame_number = self.total_pc_count
             if hasattr(self.loader, 'gt_poses'):
-                self.gt_poses = self.loader.gt_poses[config.begin_frame:config.end_frame:config.every_frame]
+                self.gt_poses = self.loader.gt_poses[config.begin_frame:config.end_frame:config.step_frame]
                 self.gt_pose_provided = True
             else:
                 self.gt_pose_provided = False
@@ -86,7 +86,7 @@ class SLAMDataset(Dataset):
                 self.pc_filenames = natsorted(os.listdir(config.pc_path))
                 self.total_pc_count_in_folder = len(self.pc_filenames)
                 config.end_frame = min(config.end_frame, self.total_pc_count_in_folder)
-                self.pc_filenames = self.pc_filenames[config.begin_frame:config.end_frame:config.every_frame]
+                self.pc_filenames = self.pc_filenames[config.begin_frame:config.end_frame:config.step_frame]
                 self.total_pc_count = len(self.pc_filenames)
                 max_frame_number = self.total_pc_count
 
@@ -107,8 +107,8 @@ class SLAMDataset(Dataset):
                     poses_uncalib = read_kitti_format_poses(config.pose_path)
                     if poses_uncalib is None:
                         poses_uncalib, poses_ts = read_tum_format_poses(config.pose_path)
-                        self.poses_ts = np.array(poses_ts[config.begin_frame:config.end_frame:config.every_frame])
-                    poses_uncalib = np.array(poses_uncalib[config.begin_frame:config.end_frame:config.every_frame])
+                        self.poses_ts = np.array(poses_ts[config.begin_frame:config.end_frame:config.step_frame])
+                    poses_uncalib = np.array(poses_uncalib[config.begin_frame:config.end_frame:config.step_frame])
                 if poses_uncalib is None:
                     sys.exit("Wrong pose file format. Please use either kitti or tum format with *.txt")
 
@@ -180,7 +180,7 @@ class SLAMDataset(Dataset):
         self.cur_source_normals = None
         self.cur_source_colors = None
 
-        self.kf_state = None
+        self.tracker = None
 
     def read_frame_ros(self, msg):
 
@@ -205,7 +205,7 @@ class SLAMDataset(Dataset):
 
         self.set_ref_pose(frame_id)
 
-        frame_id_in_folder = self.config.begin_frame + frame_id * self.config.every_frame
+        frame_id_in_folder = self.config.begin_frame + frame_id * self.config.step_frame
         data = self.loader[frame_id_in_folder]  # data loading could be slow # FIXME
 
         point_ts = None
@@ -340,17 +340,17 @@ class SLAMDataset(Dataset):
             self.last_pose_ref = self.cur_pose_ref
 
         elif frame_id > 0:
-            imu_filename = os.path.join(self.config.imu_path, "{}.csv".format(self.processed_frame))
-            imu_seq = pd.read_csv(imu_filename, delimiter=',', skiprows=1).values
-            for data in imu_seq:
+            imu_path = os.path.join(self.config.imu_path, "{}.csv".format(self.processed_frame))
+            imu_period = pd.read_csv(imu_path, delimiter=',', skiprows=1).values
+            for data in imu_period:
                 dt = data[0]  # 时间变化量
                 i_in = InputIkfom(self.config.tran_dtype, data[1:4], data[4:7])
-                self.kf_state.predict(i_in, dt)
+                self.tracker.predict(i_in, dt)
 
-            pose_propagation = np.eye(4)
-            pose_propagation[:3, :3] = self.kf_state.x.rot.cpu().numpy()
-            pose_propagation[:3, 3] = self.kf_state.x.pos.cpu().numpy()
-            self.last_odom_tran = inv(self.last_pose_ref) @ pose_propagation
+            cur_pose_init_guess = np.eye(4)
+            cur_pose_init_guess[:3, :3] = self.tracker.x.rot.cpu().numpy()
+            cur_pose_init_guess[:3, 3] = self.tracker.x.pos.cpu().numpy()
+            self.last_odom_tran = inv(self.last_pose_ref) @ cur_pose_init_guess
 
         if self.config.adaptive_range_on:
             # 获取点云的正向和负向边界
@@ -655,7 +655,7 @@ class SLAMDataset(Dataset):
                 os.path.join(self.run_path, "slam_poses"), slam_poses_out
             )
             write_tum_format_poses(
-                os.path.join(self.run_path, "slam_poses"), slam_poses_out, self.poses_ts, 0.1 * self.config.every_frame
+                os.path.join(self.run_path, "slam_poses"), slam_poses_out, self.poses_ts, 0.1 * self.config.step_frame
             )
             write_traj_as_o3d(pgo_poses, os.path.join(self.run_path, "slam_poses.ply"))
 

@@ -15,6 +15,28 @@ def vec2skew(v: torch.Tensor):
         [-v[1], v[0], zero]
     ], device=v.device, dtype=v.dtype)
 
+def vectors_to_skew_symmetric(vectors: torch.Tensor):
+    """
+    Convert a batch of vectors to a batch of skew-symmetric matrices.
+
+    Parameters:
+    vectors : torch.Tensor
+        Input tensor containing vectors. Shape [m, 3]
+
+    Returns:
+    skew_matrices : torch.Tensor
+        Output tensor containing skew-symmetric matrices. Shape [m, 3, 3]
+    """
+    skew_matrices = torch.zeros((vectors.shape[0], 3, 3), dtype=vectors.dtype, device=vectors.device)
+    skew_matrices[:, 0, 1] = -vectors[:, 2]
+    skew_matrices[:, 0, 2] = vectors[:, 1]
+    skew_matrices[:, 1, 0] = vectors[:, 2]
+    skew_matrices[:, 1, 2] = -vectors[:, 0]
+    skew_matrices[:, 2, 0] = -vectors[:, 1]
+    skew_matrices[:, 2, 1] = vectors[:, 0]
+
+    return skew_matrices
+
 
 def so3Exp(so3: torch.Tensor):
     """将 so3 向量转换为 SO3 旋转矩阵。
