@@ -1,9 +1,9 @@
 setting:
   name: "ncd128"
-  output_root: "./experiments"
-  imu_path: "./PIN_SLAM/dataset/ncd128/collection2/park/sequences/imu"
-  pc_path: "./PIN_SLAM/dataset/ncd128/collection2/park/sequences/lidar"
-  pose_ts_path: "./PIN_SLAM/dataset/ncd128/collection2/park/sequences/pose_ts.txt"
+  output_root: "./experiment"
+  imu_path: "./dataset/ncd128/collection1/quad_easy/sequences/imu"
+  pc_path: "./dataset/ncd128/collection1/quad_easy/sequences/lidar"
+  pose_ts_path: "./dataset/ncd128/collection1/quad_easy/sequences/pose_ts.txt"
   deskew: True
 
 process:
@@ -12,9 +12,11 @@ process:
   min_z_m: -10.0
   vox_down_m: 0.1
 sampler:
+  local_voxel_size_m: 0.2
   surface_sample_range_m: 0.25
   surface_sample_n: 4
-  free_sample_begin_ratio: 0.8
+  free_sample_begin_ratio: 0.5
+  free_sample_end_dist_m: 1.2
   free_front_sample_n: 2
 neuralpoints:
   voxel_size_m: 0.4
@@ -45,7 +47,7 @@ optimizer:
   adaptive_iters: True
 eval:
   wandb_vis_on: False
-  o3d_vis_on: False
+  o3d_vis_on: True
   silence_log: True
   mesh_freq_frame: 50
   mesh_min_nn: 15

@@ -19,12 +19,13 @@ class Config:
 
         # settings
         self.name: str = "dummy"  # experiment name
+        self.run_name: str = self.name  # this would also include an unique timestamp
 
         self.run_path: str = ""
         self.output_root: str = ""  # output root folder
         self.pc_path: str = ""  # input point cloud folder
-        self.imu_path: str = ""
-        self.pose_ts_path: str = ""
+        self.imu_path: str = ""  # input imu data folder
+        self.pose_ts_path: str = ""  # input pose timestamp folder
         self.pose_path: str = ""  # input pose file
         self.calib_path: str = ""  # input calib file (to sensor frame), optional
         self.label_path: str = ""  # input point-wise label path, for semantic mapping (optional)
@@ -41,7 +42,7 @@ class Config:
         # frame as the reference frame
         self.begin_frame: int = 0  # begin from this frame
         self.end_frame: int = 100000  # end at this frame
-        self.every_frame: int = 1  # process every x frame
+        self.step_frame: int = 1  # process every x frame
 
         self.seed: int = 42  # random seed for the experiment
         self.num_workers: int = 12  # number of worker for the dataloader
@@ -93,6 +94,7 @@ class Config:
 
         # neural points
         self.voxel_size_m: float = 0.3  # we use the voxel hashing structure to maintain the neural points, the voxel size is set as this value
+        self.local_voxel_size_m: float = 0.2
         self.weighted_first: bool = True  # weighted the neighborhood feature before decoding to sdf or do the weighting of the decoded sdf afterwards
         self.layer_norm_on: bool = False  # apply layer norm to the features
         self.num_nei_cells: int = 2  # the neighbor searching padding voxel # NOTE: can even be set to 3 when the motion is dramastic
@@ -124,6 +126,7 @@ class Config:
 
         # training sampler
         # spilt into 3 parts for sampling: close-to-surface (+ exact beam endpoint) + front-surface-freespace + behind-surface-freespace
+        self.local_map_size: float = 100.0
         self.surface_sample_range_m: float = 0.25  # better to be set according to the noise level (actually as the std for a gaussian distribution)
         self.surface_sample_n: int = 3
         self.free_sample_begin_ratio: float = 0.3  # minimum ray distance ratio in front of the surface
@@ -140,13 +143,21 @@ class Config:
 
         # MLP decoder
         self.mlp_bias_on: bool = True
+        self.mlp_leaky_relu: bool = False
         self.geo_mlp_level: int = 1
         self.geo_mlp_hidden_dim: int = 64
         self.sem_mlp_level: int = 1
         self.sem_mlp_hidden_dim: int = 64
         self.color_mlp_level: int = 1
         self.color_mlp_hidden_dim: int = 64
-        self.freeze_after_frame: int = 40  # if the decoder model is not loaded, it would be trained and freezed after such frame number
+        # NOTE: For achieving better reconstruction results, you can increase the size of the MLPs,
+        # or the feature dim of the neural point latent feature,
+        # or the iteration number for mapping
+        # or decrease the voxel size (resolution) for neural points
+        self.decoder_freezed: bool = False
+        self.freeze_after_frame: int = 40  # if the decoder model is not loaded, it would be trained and freezed after such frame number # TODO: change to based on moving frames
+
+
 
         # positional encoding related [not used]
         self.use_gaussian_pe: bool = False  # use Gaussian Fourier or original log positional encoding
@@ -205,17 +216,16 @@ class Config:
         self.ba_bs: int = 16384  # batch size for ba optimization
 
         # tracking (odometry estimation)
+        self.ba = None
+        self.bg = None
+        self.gravity = None
+        self.T_imu_lidar = torch.eye(4)
         self.track_on: bool = True
         self.photometric_loss_on: bool = False  # add the color (or intensity) [photometric loss] to the tracking loss
         self.photometric_loss_weight: float = 0.01  # weight for the photometric loss in tracking
         self.consist_wieght_on: bool = True  # weight for color (intensity) consistency for the measured and queried value
         self.source_vox_down_m: float = 0.8  # downsample voxel resolution for source point cloud
-        self.tradeoff_factor: float = 1000
-        self.T_imu_lidar = torch.eye(4)
-        self.ba = None
-        self.bg = None
-        self.gravity = None
-        self.uniform_motion_on: bool = True
+
         self.reg_min_grad_norm: float = 0.5  # min norm of SDF gradient for valid source point
         self.reg_max_grad_norm: float = 1.5  # max norm of SDF gradient for valid source point
         self.track_mask_query_nn_k: int = self.query_nn_k  # during tracking, a point without nn_k neighbors would be regarded as invalid
@@ -260,15 +270,29 @@ class Config:
 
         # eval
         self.wandb_vis_on: bool = False  # monitor the training on weight and bias or not
-        self.silence: bool = False  # print log in the terminal or not
+        self.silence: bool = True  # print log in the terminal or not
         self.o3d_vis_on: bool = False  # visualize the mesh in-the-fly using o3d visualzier or not [press space to pasue/resume]
         self.o3d_vis_raw: bool = False  # visualize the raw point cloud or the weight source point cloud
-        self.log_freq_frame: int = 0  # save the result log per x frames
-        self.mesh_freq_frame: int = 10  # do the reconstruction per x frames
+        self.log_freq_frame: int = 2000  # save the result log per x frames
+        self.mesh_default_on: bool = False
+        self.mesh_freq_frame: int = 20  # do the reconstruction per x frames
+        self.sdf_default_on: bool = False  # visualize the SDF slice or not
         self.sdfslice_freq_frame: int = 1  # visualize the SDF slice per x frames
         self.vis_sdf_slice_v: bool = False  # also visualize the vertical SDF slice or not (default only horizontal slice)
         self.sdf_slice_height: float = -1.0  # initial height of the horizontal SDF slice (m) in sensor frame
+        self.vis_sdf_res_m: float = 0.2  # resolution for the SDF slice for visualization (m)
         self.eval_traj_align: bool = True  # do the SE3 alignment of the trajectory when evaluating the absolute error
+
+        # visualization
+        self.local_map_default_on: bool = True
+        self.neural_point_map_default_on: bool = True
+        self.mesh_vis_normal: bool = False # normal colorization
+        self.vis_frame_axis_len: float = 0.8 # sensor frame axis length, for visualization, unit: m
+        self.vis_point_size: int = 2 # point size for visualization in o3d
+        self.sensor_cad_path = None # the path to the sensor cad file, "./cad/ipb_car.ply" for visualization
+
+        # gui
+        self.visualizer_split_width_ratio: float = 0.7 # the width ratio of the visualizer split window
 
         # mesh reconstruction, marching cubes related
         self.mc_res_m: float = 0.1  # resolution for marching cubes
@@ -281,6 +305,7 @@ class Config:
         self.infer_bs: int = 4096  # batch size for inference
 
         # o3d visualization
+        self.neural_point_map_default_on: bool = True
         self.mesh_vis_normal: bool = False  # normal colorization
         self.vis_frame_axis_len: float = 0.8  # sensor frame axis length, for visualization, unit: m
         self.vis_point_size: int = 2  # point size for visualization in o3d
@@ -332,7 +357,7 @@ class Config:
             self.first_frame_ref = config_args["setting"].get("first_frame_ref", self.first_frame_ref)
             self.begin_frame = config_args["setting"].get("begin_frame", 0)
             self.end_frame = config_args["setting"].get("end_frame", self.end_frame)
-            self.every_frame = config_args["setting"].get("every_frame", 1)
+            self.step_frame = config_args["setting"].get("step_frame", 1)
 
             self.seed = config_args["setting"].get("random_seed", self.seed)
             self.device = config_args["setting"].get("device", "cuda")  # or cpu, on cpu it's about 5 times slower
@@ -345,7 +370,7 @@ class Config:
 
             self.deskew = config_args["setting"].get("deskew", self.deskew)  # apply motion undistortion or not
             self.valid_ts_in_points = config_args["setting"].get("valid_ts", self.valid_ts_in_points)
-            if self.every_frame > 1:
+            if self.step_frame > 1:
                 self.deskew = False
 
         # process
@@ -368,6 +393,7 @@ class Config:
 
         # sampler
         if "sampler" in config_args:
+            self.local_voxel_size_m = config_args["sampler"].get("local_voxel_size_m", self.vox_down_m)
             self.surface_sample_range_m = config_args["sampler"].get("surface_sample_range_m", self.vox_down_m * 3.0)
             self.free_sample_begin_ratio = config_args["sampler"].get("free_sample_begin_ratio",
                                                                       self.free_sample_begin_ratio)
@@ -465,9 +491,7 @@ class Config:
             if grav_value is not None:
                 self.gravity = torch.tensor(config_args["tracker"].get("gravity", self.gravity), device=self.device,
                                             dtype=self.tran_dtype)
-            self.uniform_motion_on = config_args["tracker"].get("uniform_motion_on", self.uniform_motion_on)
             self.source_vox_down_m = config_args["tracker"].get("source_vox_down_m", self.vox_down_m * 10)
-            self.tradeoff_factor = config_args["tracker"].get("tradeoff_factor", self.tradeoff_factor)
             self.reg_iter_n = config_args["tracker"].get("iter_n", self.reg_iter_n)
             self.track_mask_query_nn_k = config_args["tracker"].get("valid_nn_k", self.track_mask_query_nn_k)
             self.reg_min_grad_norm = config_args["tracker"].get("min_grad_norm", self.reg_min_grad_norm)
@@ -540,23 +564,27 @@ class Config:
             # path to the sensor cad file
             self.sensor_cad_path = config_args["eval"].get('sensor_cad_path', None)
 
+            self.local_map_default_on = config_args["eval"].get('local_map_default_on', self.local_map_default_on)
+
             # frequency for pose log (per x frame)
-            self.log_freq_frame = config_args["eval"].get('log_freq_frame', 0)
+            self.log_freq_frame = config_args["eval"].get('log_freq_frame', self.log_freq_frame)
             # frequency for mesh reconstruction (per x frame)
             self.mesh_freq_frame = config_args["eval"].get('mesh_freq_frame', self.mesh_freq_frame)
             # keep the previous reconstructed mesh in the visualizer or not
             self.keep_local_mesh = config_args["eval"].get('keep_local_mesh', self.keep_local_mesh)
             # frequency for sdf slice visualization (per x frame)
-            self.sdfslice_freq_frame = config_args["eval"].get('sdf_freq_frame', 1)
+            self.sdf_default_on = config_args["eval"].get('sdf_default_on', self.sdf_default_on)
+            self.sdfslice_freq_frame = config_args["eval"].get('sdf_freq_frame', self.sdfslice_freq_frame)
             self.sdf_slice_height = config_args["eval"].get('sdf_slice_height',
                                                             self.sdf_slice_height)  # in sensor frame, unit: m
 
-            # mesh masking
+            # mesh related
+            self.mesh_default_on = config_args["eval"].get('mesh_default_on', self.mesh_default_on)
             self.mesh_min_nn = config_args["eval"].get('mesh_min_nn', self.mesh_min_nn)
             self.skip_top_voxel = config_args["eval"].get('skip_top_voxel', self.skip_top_voxel)
             self.min_cluster_vertices = config_args["eval"].get('min_cluster_vertices', self.min_cluster_vertices)
-            # initial marching cubes grid sampling interval (unit: m)
-            self.mc_res_m = config_args["eval"].get('mc_res_m', self.voxel_size_m)
+            self.mc_res_m = config_args["eval"].get('mc_res_m',
+                                                    self.voxel_size_m)  # initial marching cubes grid sampling interval (unit: m)
 
             # save the map or not
             self.save_map = config_args["eval"].get('save_map', self.save_map)
@@ -569,3 +597,4 @@ class Config:
         self.window_radius = max(self.max_range, 6.0)  # for the sampling data poo, should not be too small
         self.local_map_radius = self.max_range + 2.0  # for the local neural points
         self.vis_frame_axis_len = self.max_range / 50.0
+        self.vis_sdf_res_m = self.voxel_size_m * 0.3

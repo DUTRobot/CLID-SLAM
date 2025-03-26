@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="CLID-SLAM" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="CLID-SLAM" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="slam" project-jdk-type="Python SDK" />
 </project>

@@ -2,10 +2,6 @@
 # @file      tools.py
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 # Copyright (c) 2024 Yue Pan, all rights reserved
-# Modifications by:
-# Junlong Jiang [jiangjunlong@mail.dlut.edu.cn]
-# Copyright (c) 2025 Junlong Jiang, all rights reserved.
-
 
 import getpass
 import json
@@ -16,22 +12,120 @@ import shutil
 import subprocess
 import sys
 import time
+import warnings
+import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import List
 
 import numpy as np
 import open3d as o3d
+from rich import print
 import roma
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 import wandb
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
+from matplotlib.cm import viridis
 from torch import optim
 from torch.autograd import grad
 from torch.optim.optimizer import Optimizer
 
 from utils.config import Config
+
+
+# setup this run
+# def setup_experiment(config: Config, argv=None, debug_mode: bool = False):
+#
+#     os.environ["NUMEXPR_MAX_THREADS"] = str(multiprocessing.cpu_count())
+#     ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # begining timestamp
+#
+#     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
+#     warnings.filterwarnings("ignore", category=FutureWarning)
+#
+#     config.run_name = config.name + "_" + ts  # modified to a name that is easier to index
+#     run_path = os.path.join(config.output_root, config.run_name)
+#
+#     cuda_available = torch.cuda.is_available()
+#     if not cuda_available:
+#         print("No CUDA device available, use CPU instead")
+#         config.device = "cpu"
+#     else:
+#         torch.cuda.empty_cache()
+#     if config.device == "cpu":
+#         print("Using the pure CPU mode, this would be slow")
+#
+#     # set X service (FIXME)
+#     if "DISPLAY" not in os.environ:
+#         os.environ["DISPLAY"] = ":0"
+#
+#     # set the random seed for all
+#     seed_anything(config.seed)
+#
+#     if not debug_mode:
+#         access = 0o755
+#         os.makedirs(run_path, access, exist_ok=True)
+#         assert os.access(run_path, os.W_OK)
+#         if not config.silence:
+#             print(f"Start {run_path}")
+#
+#         config.run_path = run_path
+#
+#         mesh_path = os.path.join(run_path, "mesh")
+#         map_path = os.path.join(run_path, "map")
+#         model_path = os.path.join(run_path, "model")
+#         log_path = os.path.join(run_path, "log")
+#         meta_data_path = os.path.join(run_path, "meta")
+#         os.makedirs(mesh_path, access, exist_ok=True)
+#         os.makedirs(map_path, access, exist_ok=True)
+#         os.makedirs(model_path, access, exist_ok=True)
+#         os.makedirs(log_path, access, exist_ok=True)
+#         os.makedirs(meta_data_path, access, exist_ok=True)
+#
+#         if config.wandb_vis_on:
+#             # set up wandb
+#             setup_wandb()
+#             wandb.init(
+#                 project="PIN_SLAM", config=vars(config), dir=run_path
+#             )  # your own worksapce
+#             wandb.run.name = config.run_name
+#
+#         # config file and reproducable shell script
+#         if argv is not None:
+#             if len(argv) > 1 and os.path.exists(argv[1]):
+#                 config_path = argv[1]
+#             else:
+#                 config_path = "config/lidar_slam/run.yaml"
+#             # copy the config file to the result folder
+#             shutil.copy2(config_path, run_path)
+#
+#             git_commit_id = (
+#                 subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+#             )  # current git commit
+#             with open(os.path.join(run_path, "run.sh"), "w") as reproduce_shell:
+#                 reproduce_shell.write(" ".join(["git checkout ", git_commit_id, "\n"]))
+#                 run_str = "python3 " + " ".join(argv)
+#                 reproduce_shell.write(run_str)
+#
+#
+#         # disable lidar deskewing when not input per frame
+#         if config.step_frame > 1:
+#             config.deskew = False
+#
+#         # write the full configs to yaml file
+#         config_dict = vars(config)
+#         config_out_path = os.path.join(meta_data_path, "config_all.yaml")
+#         with open(config_out_path, 'w') as file:
+#             yaml.dump(config_dict, file, default_flow_style=False)
+#
+#     # set up dtypes, note that torch stuff cannot be write to yaml, so we set it up after write out the yaml for the whole config
+#     config.setup_dtype()
+#     torch.set_default_dtype(config.dtype)
+#
+#     return run_path
 
 
 # setup this run
@@ -91,59 +185,31 @@ def setup_experiment(config: Config, argv=None, debug_mode: bool = False):
     torch.set_default_dtype(config.dtype)
 
     # set the random seed for all
-    setup_seed(config.seed)
+    seed_anything(config.seed)
 
     return run_path
 
 
-def setup_seed(seed):
+def seed_anything(seed):
     os.environ["PYTHONHASHSEED"] = str(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
     o3d.utility.random.seed(seed)
 
-
-def setup_optimizer_geo(
-        config: Config,
-        neural_point_feat,
-        mlp_geo_param=None,
-        lr_ratio=1.0,
-) -> Optimizer:
-    lr_cur = config.lr * lr_ratio
-    weight_decay = config.weight_decay
-    weight_decay_mlp = 0.0
-    opt_setting = []
-    # weight_decay is for L2 regularization
-    if mlp_geo_param is not None:
-        mlp_geo_param_opt_dict = {
-            "params": mlp_geo_param,
-            "lr": lr_cur,
-            # "weight_decay": weight_decay_mlp,
-        }
-        opt_setting.append(mlp_geo_param_opt_dict)
-    feat_opt_dict = {
-        "params": neural_point_feat,
-        "lr": lr_cur,
-        # "weight_decay": weight_decay,
-    }
-    opt_setting.append(feat_opt_dict)
-    if config.opt_adam:
-        opt = optim.Adam(opt_setting, betas=(0.9, 0.99), eps=config.adam_eps)
-    else:
-        opt = optim.SGD(opt_setting, momentum=0.9)
-
-    return opt
-
+def remove_gpu_cache():
+    cuda_available = torch.cuda.is_available()
+    if cuda_available:
+        torch.cuda.empty_cache()
 
 def setup_optimizer(
-        config: Config,
-        neural_point_feat,
-        mlp_geo_param=None,
-        mlp_sem_param=None,
-        mlp_color_param=None,
-        poses=None,
-        lr_ratio=1.0,
+    config: Config,
+    neural_point_feat,
+    mlp_geo_param=None,
+    mlp_sem_param=None,
+    mlp_color_param=None,
+    poses=None,
+    lr_ratio=1.0,
 ) -> Optimizer:
     lr_cur = config.lr * lr_ratio
     lr_pose = config.lr_pose
@@ -209,12 +275,13 @@ def setup_wandb():
 
 
 def step_lr_decay(
-        optimizer: Optimizer,
-        learning_rate: float,
-        iteration_number: int,
-        steps: List,
-        reduce: float = 1.0,
+    optimizer: Optimizer,
+    learning_rate: float,
+    iteration_number: int,
+    steps: List,
+    reduce: float = 1.0,
 ):
+
     if reduce > 1.0 or reduce <= 0.0:
         sys.exit("The decay reta should be between 0 and 1.")
 
@@ -229,8 +296,10 @@ def step_lr_decay(
     return learning_rate
 
 
-# calculate the analytical gradient by pytorch auto diff
 def get_gradient(inputs, outputs):
+    """
+    Calculate the analytical gradient by pytorch auto diff
+    """
     d_points = torch.ones_like(outputs, requires_grad=False, device=outputs.device)
     points_grad = grad(
         outputs=outputs,
@@ -255,72 +324,64 @@ def unfreeze_model(model: nn.Module):
             param.requires_grad = True
 
 
-def freeze_decoders(geo_decoder, sem_decoder, color_decoder, config):
+def freeze_decoders(mlp_dict, config):
     if not config.silence:
-        print("Freeze the decoder")
-    freeze_model(geo_decoder)  # fixed the geo decoder
-    if config.semantic_on:
-        freeze_model(sem_decoder)  # fixed the sem decoder
-    if config.color_on:
-        freeze_model(color_decoder)  # fixed the color decoder
+        print("Freeze the decoders")
+    
+    keys = list(mlp_dict.keys())
+    for key in keys:
+        mlp = mlp_dict[key]
+        if mlp is not None:
+            freeze_model(mlp)
 
-
-def save_checkpoint(
-        neural_points,
-        geo_decoder,
-        color_decoder,
-        sem_decoder,
-        optimizer,
-        run_path,
-        checkpoint_name,
-        iters,
-):
-    torch.save(
-        {
-            "iters": iters,
-            "neural_points": neural_points,  # save the whole NN module
-            "geo_decoder": geo_decoder.state_dict(),
-            "color_decoder": color_decoder.state_dict(),
-            "sem_decoder": sem_decoder.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        },
-        os.path.join(run_path, f"{checkpoint_name}.pth"),
-    )
-    print(f"save the model to {run_path}/{checkpoint_name}.pth")
+def unfreeze_decoders(mlp_dict, config):
+    if not config.silence:
+        print("Unfreeze the decoders")
+    keys = list(mlp_dict.keys())
+    for key in keys:
+        mlp = mlp_dict[key]
+        if mlp is not None:
+            unfreeze_model(mlp)
 
 
 def save_implicit_map(
-        run_path, neural_points, geo_decoder, color_decoder=None, sem_decoder=None
+    run_path, neural_points, mlp_dict, with_footprint: bool = True
 ):
-    map_dict = {"neural_points": neural_points, "geo_decoder": geo_decoder.state_dict()}
-    if color_decoder is not None:
-        map_dict["color_decoder"] = color_decoder.state_dict()
-    if sem_decoder is not None:
-        map_dict["sem_decoder"] = sem_decoder.state_dict()
+    # together with the mlp decoders
+
+    map_model = {"neural_points": neural_points}
+
+    for key in list(mlp_dict.keys()):
+        if mlp_dict[key] is not None:
+            map_model[key] = mlp_dict[key].state_dict()
+        else:
+            map_model[key] = None
 
     model_save_path = os.path.join(run_path, "model", "pin_map.pth")  # end with .pth
-    torch.save(map_dict, model_save_path)
+    torch.save(map_model, model_save_path)
 
     print(f"save the map to {model_save_path}")
 
-    np.save(
-        os.path.join(run_path, "memory_footprint.npy"),
-        np.array(neural_points.memory_footprint),
-    )  # save detailed memory table
+    if with_footprint:
+        np.save(
+            os.path.join(run_path, "memory_footprint.npy"),
+            np.array(neural_points.memory_footprint),
+        )  # save detailed memory table
 
 
-def load_decoder(config, geo_mlp, sem_mlp, color_mlp):
-    loaded_model = torch.load(config.model_path)
-    geo_mlp.load_state_dict(loaded_model["geo_decoder"])
-    print("Pretrained decoder loaded")
-    freeze_model(geo_mlp)  # fixed the decoder
-    if config.semantic_on:
-        sem_mlp.load_state_dict(loaded_model["sem_decoder"])
-        freeze_model(sem_mlp)  # fixed the decoder
-    if config.color_on:
-        color_mlp.load_state_dict(loaded_model["color_decoder"])
-        freeze_model(color_mlp)  # fixed the decoder
+def load_decoders(loaded_model, mlp_dict, freeze_decoders: bool = True):
 
+    for key in list(loaded_model.keys()):
+        if key != "neural_points":
+            if loaded_model[key] is not None:
+                mlp_dict[key].load_state_dict(loaded_model[key])
+                if freeze_decoders:
+                    freeze_model(mlp_dict[key])
+
+    print("Pretrained decoders loaded")
+
+def create_bbx_o3d(center, half_size):
+    return o3d.geometry.AxisAlignedBoundingBox(center - half_size, center + half_size)
 
 def get_time():
     """
@@ -330,6 +391,49 @@ def get_time():
     if cuda_available:  # issue #10
         torch.cuda.synchronize()
     return time.time()
+
+def track_progress():
+    progress_bar = tqdm(desc="Processing", total=0, unit="calls")
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            wrapper.calls += 1
+            progress_bar.update(1)
+            progress_bar.set_description("Processing point cloud frame")
+            return result
+        wrapper.calls = 0
+        return wrapper
+    return decorator
+
+def is_prime(n):
+    """Helper function to check if a number is prime."""
+    if n < 2:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+def find_closest_prime(n):
+    """Find the closest prime number to n."""
+    if n < 2:
+        return 2
+    
+    if is_prime(n):
+        return n
+        
+    # Check numbers both above and below n
+    lower = n - 1
+    upper = n + 1
+    
+    while True:
+        if is_prime(lower):
+            return lower
+        if is_prime(upper):
+            return upper
+        lower -= 1
+        upper += 1
 
 
 def load_from_json(filename: Path):
@@ -374,8 +478,10 @@ def create_axis_aligned_bounding_box(center, size):
 
 
 def apply_quaternion_rotation(quat: torch.tensor, points: torch.tensor) -> torch.tensor:
-    # apply passive rotation: coordinate system rotation w.r.t. the points
-    # p' = qpq^-1
+    """
+    Apply passive rotation: coordinate system rotation w.r.t. the points
+    p' = qpq^-1
+    """
     quat_w = quat[..., 0].unsqueeze(-1)
     quat_xyz = -quat[..., 1:]
     t = 2 * torch.linalg.cross(quat_xyz, points)
@@ -391,10 +497,10 @@ def rotmat_to_quat(rot_matrix: torch.tensor):
     return N,4
     """
     qw = (
-            torch.sqrt(
-                1.0 + rot_matrix[:, 0, 0] + rot_matrix[:, 1, 1] + rot_matrix[:, 2, 2]
-            )
-            / 2.0
+        torch.sqrt(
+            1.0 + rot_matrix[:, 0, 0] + rot_matrix[:, 1, 1] + rot_matrix[:, 2, 2]
+        )
+        / 2.0
     )
     qx = (rot_matrix[:, 2, 1] - rot_matrix[:, 1, 2]) / (4.0 * qw)
     qy = (rot_matrix[:, 0, 2] - rot_matrix[:, 2, 0]) / (4.0 * qw)
@@ -403,6 +509,11 @@ def rotmat_to_quat(rot_matrix: torch.tensor):
 
 
 def quat_to_rotmat(quaternions: torch.tensor):
+    """
+    Convert a batch of quaternions to rotation matrices.
+    quaternions: N,4
+    return N,3,3
+    """
     # Ensure quaternions are normalized
     quaternions /= torch.norm(quaternions, dim=1, keepdim=True)
 
@@ -452,10 +563,13 @@ def quat_multiply(q1: torch.tensor, q2: torch.tensor):
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
 
-    return torch.stack((w, x, y, z), dim=1)  # N, 4
+    return torch.stack((w, x, y, z), dim=1) # N, 4
 
 
 def torch2o3d(points_torch):
+    """
+    Convert a batch of points from torch to o3d
+    """
     pc_o3d = o3d.geometry.PointCloud()
     points_np = points_torch.cpu().detach().numpy().astype(np.float64)
     pc_o3d.points = o3d.utility.Vector3dVector(points_np)
@@ -463,12 +577,22 @@ def torch2o3d(points_torch):
 
 
 def o3d2torch(o3d, device="cpu", dtype=torch.float32):
+    """
+    Convert a batch of points from o3d to torch
+    """
     return torch.tensor(np.asarray(o3d.points), dtype=dtype, device=device)
 
 
 def transform_torch(points: torch.tensor, transformation: torch.tensor):
-    # points [N, 3]
-    # transformation [4, 4]
+    """
+    Transform a batch of points by a transformation matrix
+    Args:
+        points: N,3 torch tensor, the coordinates of all N (axbxc) query points in the scaled
+                kaolin coordinate system [-1,1]
+        transformation: 4,4 torch tensor, the transformation matrix
+    Returns:
+        transformed_points: N,3 torch tensor, the transformed coordinates
+    """
     # Add a homogeneous coordinate to each point in the point cloud
     points_homo = torch.cat([points, torch.ones(points.shape[0], 1).to(points)], dim=1)
 
@@ -481,33 +605,16 @@ def transform_torch(points: torch.tensor, transformation: torch.tensor):
     return transformed_points
 
 
-def vectors_to_skew_symmetric(vectors: torch.Tensor):
-    """
-    Convert a batch of vectors to a batch of skew-symmetric matrices.
-
-    Parameters:
-    vectors : torch.Tensor
-        Input tensor containing vectors. Shape [m, 3]
-
-    Returns:
-    skew_matrices : torch.Tensor
-        Output tensor containing skew-symmetric matrices. Shape [m, 3, 3]
-    """
-    skew_matrices = torch.zeros((vectors.shape[0], 3, 3), dtype=vectors.dtype, device=vectors.device)
-    skew_matrices[:, 0, 1] = -vectors[:, 2]
-    skew_matrices[:, 0, 2] = vectors[:, 1]
-    skew_matrices[:, 1, 0] = vectors[:, 2]
-    skew_matrices[:, 1, 2] = -vectors[:, 0]
-    skew_matrices[:, 2, 0] = -vectors[:, 1]
-    skew_matrices[:, 2, 1] = vectors[:, 0]
-
-    return skew_matrices
-
-
 def transform_batch_torch(points: torch.tensor, transformation: torch.tensor):
-    # points [N, 3]
-    # transformation [N, 4, 4]
-    # N,3,3 @ N,3,1 -> N,3,1 + N,3,1 -> N,3,1 -> N,3
+    """
+    Transform a batch of points by a batch of transformation matrices
+    Args:
+        points: N,3 torch tensor, the coordinates of all N (axbxc) query points in the scaled
+                kaolin coordinate system [-1,1]
+        transformation: N,4,4 torch tensor, the transformation matrices
+    Returns:
+        transformed_points: N,3 torch tensor, the transformed coordinates
+    """
 
     # Extract rotation and translation components
     rotation = transformation[:, :3, :3].to(points)
@@ -544,7 +651,7 @@ def voxel_down_sample_torch(points: torch.tensor, voxel_size: float):
     center = (grid + 0.5) * voxel_size
     dist = ((points - center) ** 2).sum(dim=1) ** 0.5
     dist = (
-            dist / dist.max() * (_quantization - 1)
+        dist / dist.max() * (_quantization - 1)
     ).long()  # for speed up # [0-_quantization]
 
     grid = grid.long() - offset
@@ -572,7 +679,7 @@ def voxel_down_sample_torch(points: torch.tensor, voxel_size: float):
 
 
 def voxel_down_sample_min_value_torch(
-        points: torch.tensor, voxel_size: float, value: torch.tensor
+    points: torch.tensor, voxel_size: float, value: torch.tensor
 ):
     """
         voxel based downsampling. Returns the indices of the points which has the minimum value in the voxel.
@@ -615,10 +722,13 @@ def voxel_down_sample_min_value_torch(
 
 # split a large point cloud into bounding box chunks
 def split_chunks(
-        pc: o3d.geometry.PointCloud(),
-        aabb: o3d.geometry.AxisAlignedBoundingBox(),
-        chunk_m: float = 100.0,
+    pc: o3d.geometry.PointCloud(),
+    aabb: o3d.geometry.AxisAlignedBoundingBox(),
+    chunk_m: float = 100.0
 ):
+    """
+    Split a large point cloud into bounding box chunks
+    """
     if not pc.has_points():
         return None
 
@@ -627,7 +737,7 @@ def split_chunks(
 
     min_bound = aabb.get_min_bound()
     max_bound = (
-            aabb.get_max_bound() + 1e-5
+        aabb.get_max_bound() + 1e-5
     )  # just to gurantee there's a zero on one side
     bbx_range = max_bound - min_bound
     if bbx_range[0] > bbx_range[1]:
@@ -686,7 +796,12 @@ def split_chunks(
 
 
 # torch version of lidar undistortion (deskewing)
-def deskewing(points: torch.tensor, ts: torch.tensor, pose: torch.tensor, ts_mid_pose=0.5):
+def deskewing(
+    points: torch.tensor, ts: torch.tensor, pose: torch.tensor, ts_mid_pose=0.5
+):
+    """
+    Deskew a batch of points at timestamp ts by a relative transformation matrix
+    """
     if ts is None:
         return points  # no deskewing
 
@@ -701,25 +816,30 @@ def deskewing(points: torch.tensor, ts: torch.tensor, pose: torch.tensor, ts_mid
     max_ts = torch.max(ts)
     ts = (ts - min_ts) / (max_ts - min_ts)
 
-    ts -= ts_mid_pose
+    # this is related to: https://github.com/PRBonn/kiss-icp/issues/299
+    ts -= ts_mid_pose 
 
-    rotmat_slerp = roma.rotmat_slerp(torch.eye(3).to(points), pose[:3, :3].to(points), ts)
+    rotmat_slerp = roma.rotmat_slerp(
+        torch.eye(3).to(points), pose[:3, :3].to(points), ts
+    )
+
     tran_lerp = ts[:, None] * pose[:3, 3].to(points)
 
     points_deskewd = points
-    points_deskewd[:, :3] = (rotmat_slerp @ points[:, :3].unsqueeze(-1)).squeeze(
-        -1
-    ) + tran_lerp
+    points_deskewd[:, :3] = (rotmat_slerp @ points[:, :3].unsqueeze(-1)).squeeze(-1) + tran_lerp
 
     return points_deskewd
 
 
 def tranmat_close_to_identity(mats: np.ndarray, rot_thre: float, tran_thre: float):
+    """
+    Check if a batch of transformation matrices is close to identity
+    """
     rot_diff = np.abs(mats[:3, :3] - np.identity(3))
 
     rot_close_to_identity = np.all(rot_diff < rot_thre)
 
-    tran_diff = mats[:3, 3]
+    tran_diff = np.abs(mats[:3, 3])
 
     tran_close_to_identity = np.all(tran_diff < tran_thre)
 
@@ -728,21 +848,79 @@ def tranmat_close_to_identity(mats: np.ndarray, rot_thre: float, tran_thre: floa
     else:
         return False
 
+def feature_pca_torch(data, principal_components = None,
+                     principal_dim: int = 3,
+                     down_rate: int = 1,
+                     project_data: bool = True,
+                     normalize: bool = True):
+    """
+        do PCA to a NxD torch tensor to get the data along the K principle dimensions
+        N is the data count, D is the dimension of the data
+
+        We can also use a pre-computed principal_components for only the projection of input data
+    """
+
+    N, D = data.shape
+
+    # Step 1: Center the data (subtract the mean of each dimension)
+    data_centered = data - data.mean(dim=0)
+
+    if principal_components is None:
+        data_centered_for_compute = data_centered[::down_rate]
+
+        assert data_centered_for_compute.shape[0] > principal_dim, "not enough data for PCA computation, down_rate might be too large or original data count is too small"
+
+        # Step 2: Compute the covariance matrix (D x D)
+        cov_matrix = torch.matmul(data_centered_for_compute.T, data_centered_for_compute) / (N - 1)
+
+        # Step 3: Perform eigen decomposition of the covariance matrix
+        eigenvalues, eigenvectors = torch.linalg.eig(cov_matrix)
+        eigenvalues_r = eigenvalues.real.to(data)
+        eigenvectors_r = eigenvectors.real.to(data)
+
+        # Step 4: Sort eigenvalues and eigenvectors in descending order
+        sorted_indices = torch.argsort(eigenvalues_r, descending=True)
+        principal_components = eigenvectors_r[:, sorted_indices[:principal_dim]]  # First 3 principal components
+
+    data_pca = None
+    if project_data:
+        # Step 5: Project data onto the top 3 principal components
+        data_pca = torch.matmul(data_centered, principal_components) # N, D @ D, P
+
+        # normalize to show as rgb
+        if normalize: 
+
+            # # deal with outliers
+            quantile_down_rate = 37 # quantile has count limit, downsample the data to avoid the limit
+            min_vals = torch.quantile(data_pca[::quantile_down_rate], 0.02, dim=0, keepdim=True)
+            max_vals = torch.quantile(data_pca[::quantile_down_rate], 0.98, dim=0, keepdim=True)
+
+            # Normalize to range [0, 1]
+            data_pca.sub_(min_vals).div_(max_vals - min_vals)
+            # data_pca = data_pca.clamp(0, 1)
+
+    return data_pca, principal_components
 
 def plot_timing_detail(time_table: np.ndarray, saving_path: str, with_loop=False):
+    """
+    Plot the timing detail for processing per frame
+    """
     frame_count = time_table.shape[0]
     time_table_ms = time_table * 1e3
 
     for i in range(time_table.shape[1] - 1):  # accumulated time
         time_table_ms[:, i + 1] += time_table_ms[:, i]
 
+    # font1 = {'family': 'Times New Roman', 'weight' : 'normal', 'size': 16}
+    # font2 = {'family': 'Times New Roman', 'weight' : 'normal', 'size': 18}
     font2 = {"weight": "normal", "size": 18}
 
     color_values = np.linspace(0, 1, 6)
-    # 使用 "viridis" colormap，并获取 RGB 颜色
-    colors = [plt.cm.viridis(x) for x in color_values]
+    # Get the colors from the "viridis" colormap at the specified values
+    # plasma, Pastel1, tab10
+    colors = [viridis(x) for x in color_values]
 
-    fig = plt.figure(figsize=(12.0, 8.0))
+    fig = plt.figure(figsize=(12.0, 4.0))
 
     frame_array = np.arange(frame_count)
     realtime_limit = 100.0 * np.ones([frame_count, 1])
@@ -756,44 +934,40 @@ def plot_timing_detail(time_table: np.ndarray, saving_path: str, with_loop=False
         frame_array,
         time_table_ms[:, 0],
         facecolor=colors[0],
-        edgecolor=colors[0],
+        edgecolor="face",
         where=time_table_ms[:, 0] > 0,
         alpha=alpha_value,
         interpolate=True,
-        label="Pre-processing"
     )
     ax1.fill_between(
         frame_array,
         time_table_ms[:, 0],
         time_table_ms[:, 1],
         facecolor=colors[1],
-        edgecolor=colors[1],
+        edgecolor="face",
         where=time_table_ms[:, 1] > time_table_ms[:, 0],
         alpha=alpha_value,
         interpolate=True,
-        label="Odometry"
     )
     ax1.fill_between(
         frame_array,
         time_table_ms[:, 1],
         time_table_ms[:, 2],
         facecolor=colors[2],
-        edgecolor=colors[2],
+        edgecolor="face",
         where=time_table_ms[:, 2] > time_table_ms[:, 1],
         alpha=alpha_value,
         interpolate=True,
-        label="Mapping preparation"
     )
     ax1.fill_between(
         frame_array,
         time_table_ms[:, 2],
         time_table_ms[:, 3],
         facecolor=colors[3],
-        edgecolor=colors[3],
+        edgecolor="face",
         where=time_table_ms[:, 3] > time_table_ms[:, 2],
         alpha=alpha_value,
         interpolate=True,
-        label="Map optimization"
     )
     if with_loop:
         ax1.fill_between(
@@ -801,66 +975,44 @@ def plot_timing_detail(time_table: np.ndarray, saving_path: str, with_loop=False
             time_table_ms[:, 3],
             time_table_ms[:, 4],
             facecolor=colors[4],
-            edgecolor=colors[4],
+            edgecolor="face",
             where=time_table_ms[:, 4] > time_table_ms[:, 3],
             alpha=alpha_value,
             interpolate=True,
-            label="Loop closures"
         )
 
     ax1.plot(frame_array, realtime_limit, "--", linewidth=line_width_2, color="k")
 
     plt.tick_params(labelsize=12)
+    labels = ax1.get_xticklabels() + ax1.get_yticklabels()
+    # [label.set_fontname('Times New Roman') for label in labels]
+
     plt.xlim((0, frame_count - 1))
     plt.ylim((0, 200))
 
     plt.xlabel("Frame ID", font2)
     plt.ylabel("Runtime (ms)", font2)
     plt.tight_layout()
+    # plt.title('Timing table')
 
-    plt.legend(prop=font2, loc=2)
+    if with_loop:
+        legend = plt.legend(
+            (
+                "Pre-processing",
+                "Odometry",
+                "Mapping preparation",
+                "Map optimization",
+                "Loop closures",
+            ),
+            prop=font2,
+            loc=2,
+        )
+    else:
+        legend = plt.legend(
+            ("Pre-processing", "Odometry", "Mapping preparation", "Map optimization"),
+            prop=font2,
+            loc=2,
+        )
+
     plt.savefig(saving_path, dpi=500)
-
-
-def estimate_plane(points, eta_threshold=0.2, threshold=0.2):
-    def fit_planes(points):
-        """
-        使用SVD拟合多个平面
-        返回:
-        - normals: 平面的法向量
-        - centroids: 平面上的点
-        - singular_values: 奇异值
-        """
-        centroid = points.mean(dim=1, keepdim=True)  # 减去点的中心
-        centered_points = points - centroid
-        U, S, Vh = torch.linalg.svd(centered_points, full_matrices=False)  # 进行SVD
-
-        # 平面的法向量是 Vh 的最后一行（注意 Vh 是 V 的转置）
-        normals = Vh[:, -1, :]
-        return normals, centroid.squeeze(1), S
-
-    def is_valid_planes(singular_values, eta_threshold):
-        """
-        根据η值判断平面是否有效
-        η值计算公式: η = λ_min / sqrt(λ_min^2 + λ_mid^2 + λ_max^2)
-        返回:
-        - bool: 平面是否有效
-        """
-        lambda_min = singular_values[:, -1]
-        lambda_mid = singular_values[:, 1]
-        lambda_max = singular_values[:, 0]
-        # eta = lambda_min / torch.sqrt(lambda_min ** 2 + lambda_mid ** 2 + lambda_max ** 2)
-        eta = lambda_min / lambda_mid
-        return eta <= eta_threshold
-
-    m, num_points, _ = points.shape
-    normal_vector, centroids, singular_values = fit_planes(points)
-    unit_normal_vector = torch.zeros((m, 3), dtype=points.dtype, device=points.device)
-    valid_mask = is_valid_planes(singular_values, eta_threshold)
-    normal_vector = normal_vector[valid_mask]
-    unit_normal_vector[valid_mask] = normal_vector
-    plane_constant = -1.0 * torch.sum(unit_normal_vector * centroids, dim=1)
-    distances = torch.abs((points @ unit_normal_vector.unsqueeze(-1)).squeeze() + plane_constant.unsqueeze(-1))
-    fit_success = torch.max(distances, dim=1).values <= threshold
-    mask = fit_success & valid_mask
-    return unit_normal_vector, plane_constant, mask
+    # plt.show()

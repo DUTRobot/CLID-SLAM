@@ -16,24 +16,22 @@ from model.decoder import Decoder
 from model.neural_points import NeuralPoints
 from utils.config import Config
 from utils.semantic_kitti_utils import sem_kitti_color_map
-
+from utils.tools import remove_gpu_cache
 
 class Mesher:
     def __init__(
         self,
         config: Config,
         neural_points: NeuralPoints,
-        geo_decoder: Decoder,
-        sem_decoder: Decoder,
-        color_decoder: Decoder,
+        decoders: dict,
     ):
 
         self.config = config
         self.silence = config.silence
         self.neural_points = neural_points
-        self.geo_decoder = geo_decoder
-        self.sem_decoder = sem_decoder
-        self.color_decoder = color_decoder
+        self.sdf_mlp = decoders["sdf"]
+        self.sem_mlp = decoders["semantic"]
+        self.color_mlp = decoders["color"]
         self.device = config.device
         self.cur_device = self.device
         self.dtype = config.dtype
@@ -127,7 +125,7 @@ class Mesher:
                             device=self.device,
                         )
                     # predict the sdf with the feature, only do for the unmasked part (not in the unknown freespace)
-                    batch_sdf[pred_mask] = self.geo_decoder.sdf(
+                    batch_sdf[pred_mask] = self.sdf_mlp.sdf(
                         batch_geo_feature[pred_mask]
                     )
 
@@ -138,7 +136,7 @@ class Mesher:
                     else:
                         sdf_pred[head:tail] = batch_sdf.detach().cpu().numpy()
                 if query_sem:
-                    batch_sem_prob = self.sem_decoder.sem_label_prob(batch_geo_feature)
+                    batch_sem_prob = self.sem_mlp.sem_label_prob(batch_geo_feature)
                     if not self.config.weighted_first:
                         batch_sem_prob = torch.sum(batch_sem_prob * weight_knn, dim=1)
                     batch_sem = torch.argmax(batch_sem_prob, dim=1)
@@ -147,7 +145,7 @@ class Mesher:
                     else:
                         sem_pred[head:tail] = batch_sem.detach().cpu().numpy()
                 if query_color:
-                    batch_color = self.color_decoder.regress_color(batch_color_feature)
+                    batch_color = self.color_mlp.regress_color(batch_color_feature)
                     if not self.config.weighted_first:
                         batch_color = torch.sum(batch_color * weight_knn, dim=1)  # N, C
                     if out_torch:
@@ -213,7 +211,9 @@ class Mesher:
         return coord, voxel_num_xyz, voxel_origin
 
     def get_query_from_hor_slice(self, bbx, slice_z, voxel_size):
-        """get grid query points inside a given bounding box (bbx) at slice height (slice_z)"""
+        """
+        get grid query points inside a given bounding box (bbx) at slice height (slice_z)
+        """
         # bbx and voxel_size are all in the world coordinate system
         min_bound = bbx.get_min_bound()
         max_bound = bbx.get_max_bound()
@@ -246,7 +246,9 @@ class Mesher:
         return coord, voxel_num_xyz, voxel_origin
 
     def get_query_from_ver_slice(self, bbx, slice_x, voxel_size):
-        """get grid query points inside a given bounding box (bbx) at slice position (slice_x)"""
+        """
+        get grid query points inside a given bounding box (bbx) at slice position (slice_x)
+        """
         # bbx and voxel_size are all in the world coordinate system
         min_bound = bbx.get_min_bound()
         max_bound = bbx.get_max_bound()
@@ -279,6 +281,9 @@ class Mesher:
         return coord, voxel_num_xyz, voxel_origin
 
     def generate_sdf_map(self, coord, sdf_pred, mc_mask):
+        """
+        Generate the SDF map for saving
+        """
         device = o3d.core.Device("CPU:0")
         dtype = o3d.core.float32
         sdf_map_pc = o3d.t.geometry.PointCloud(device)
@@ -305,7 +310,9 @@ class Mesher:
     def generate_sdf_map_for_vis(
         self, coord, sdf_pred, mc_mask, min_sdf=-1.0, max_sdf=1.0, cmap="bwr"
     ):  # 'jet','bwr','viridis'
-
+        """
+        Generate the SDF map for visualization
+        """
         # do the masking or not
         if mc_mask is not None:
             coord = coord[mc_mask > 0]
@@ -316,7 +323,7 @@ class Mesher:
         sdf_pred_show = np.clip((sdf_pred - min_sdf) / (max_sdf - min_sdf), 0.0, 1.0)
 
         color_map = cm.get_cmap(cmap)  # or 'jet'
-        colors = color_map(sdf_pred_show)[:, :3].astype(np.float64)
+        colors = color_map(1.0 - sdf_pred_show)[:, :3].astype(np.float64) # change to blue (+) --> red (-)
 
         sdf_map_pc = o3d.geometry.PointCloud()
         sdf_map_pc.points = o3d.utility.Vector3dVector(coord_np)
@@ -378,10 +385,8 @@ class Mesher:
         # the input are all already numpy arraies
         verts, faces = np.zeros((0, 3)), np.zeros((0, 3))
         try:
-            import marching_cubes as mcubes
-            # verts, faces = mcubes.marching_cubes(mc_sdf, 0.0, truncation=3.0)  # 原本的实现方法，更消耗时间
             verts, faces, _, _ = skimage.measure.marching_cubes(
-                mc_sdf, level=0.0, allow_degenerate=True, mask=mc_mask
+                mc_sdf, level=0.0, allow_degenerate=False, mask=mc_mask
             )
             #  Whether to allow degenerate (i.e. zero-area) triangles in the
             # end-result. Default True. If False, degenerate triangles are
@@ -394,6 +399,9 @@ class Mesher:
         return verts, faces
 
     def estimate_vertices_sem(self, mesh, verts, filter_free_space_vertices=True):
+        """
+        Predict the semantic label of the vertices
+        """
         if len(verts) == 0:
             return mesh
 
@@ -415,6 +423,9 @@ class Mesher:
         return mesh
 
     def estimate_vertices_color(self, mesh, verts):
+        """
+        Predict the color of the vertices
+        """
         if len(verts) == 0:
             return mesh
 
@@ -432,7 +443,9 @@ class Mesher:
         return mesh
 
     def filter_isolated_vertices(self, mesh, filter_cluster_min_tri=300):
-        # print("Cluster connected triangles")
+        """
+        Cluster connected triangles and remove the small clusters
+        """
         triangle_clusters, cluster_n_triangles, _ = mesh.cluster_connected_triangles()
         triangle_clusters = np.asarray(triangle_clusters)
         cluster_n_triangles = np.asarray(cluster_n_triangles)
@@ -445,8 +458,11 @@ class Mesher:
         return mesh
 
     def generate_bbx_sdf_hor_slice(
-        self, bbx, slice_z, voxel_size, query_locally=False, min_sdf=-1.0, max_sdf=1.0
+        self, bbx, slice_z, voxel_size, query_locally=False, min_sdf=-1.0, max_sdf=1.0, mask_min_nn_count=5
     ):
+        """
+        Generate the SDF slice at height (slice_z)
+        """
         # print("Generate the SDF slice at heright %.2f (m)" % (slice_z))
         coord, _, _ = self.get_query_from_hor_slice(bbx, slice_z, voxel_size)
         sdf_pred, _, _, mc_mask = self.query_points(
@@ -456,8 +472,8 @@ class Mesher:
             False,
             False,
             self.config.mc_mask_on,
-            query_locally,
-            mask_min_nn_count=3,
+            query_locally=query_locally,
+            mask_min_nn_count=mask_min_nn_count,
         )
         sdf_map_pc = self.generate_sdf_map_for_vis(
             coord, sdf_pred, mc_mask, min_sdf, max_sdf
@@ -466,8 +482,11 @@ class Mesher:
         return sdf_map_pc
 
     def generate_bbx_sdf_ver_slice(
-        self, bbx, slice_x, voxel_size, query_locally=False, min_sdf=-1.0, max_sdf=1.0
+        self, bbx, slice_x, voxel_size, query_locally=False, min_sdf=-1.0, max_sdf=1.0, mask_min_nn_count=5
     ):
+        """
+        Generate the SDF slice at x position (slice_x)
+        """
         # print("Generate the SDF slice at x position %.2f (m)" % (slice_x))
         coord, _, _ = self.get_query_from_ver_slice(bbx, slice_x, voxel_size)
         sdf_pred, _, _, mc_mask = self.query_points(
@@ -477,8 +496,8 @@ class Mesher:
             False,
             False,
             self.config.mc_mask_on,
-            query_locally,
-            mask_min_nn_count=3,
+            query_locally=query_locally,
+            mask_min_nn_count=mask_min_nn_count,
         )
         sdf_map_pc = self.generate_sdf_map_for_vis(
             coord, sdf_pred, mc_mask, min_sdf, max_sdf
@@ -501,6 +520,9 @@ class Mesher:
         mesh_min_nn=10,
         use_torch_mc=False,
     ):
+        """
+        Reconstruct the mesh from a collection of bounding boxes
+        """
         if not self.silence:
             print("# Chunk for meshing: ", len(aabbs))
             
@@ -520,6 +542,8 @@ class Mesher:
                 use_torch_mc,
             )
             mesh_merged += cur_mesh
+
+            remove_gpu_cache() # deal with high GPU memory consumption when meshing (TODO)
 
         mesh_merged.remove_duplicated_vertices()
 
@@ -547,7 +571,9 @@ class Mesher:
         mesh_min_nn=10,
         use_torch_mc=False,
     ):
-
+        """
+        Reconstruct the mesh from a given bounding box
+        """
         # reconstruct and save the (semantic) mesh from the feature octree the decoders within a
         # given bounding box.  bbx and voxel_size all with unit m, in world coordinate system
         coord, voxel_num_xyz, voxel_origin = self.get_query_from_bbx(
@@ -597,8 +623,8 @@ class Mesher:
                 o3d.utility.Vector3iVector(faces),
             )
 
-        if not self.silence:
-            print("Marching cubes done")
+        # if not self.silence:
+        #     print("Marching cubes done")
 
         if estimate_sem:
             mesh = self.estimate_vertices_sem(mesh, verts, filter_free_space_vertices)

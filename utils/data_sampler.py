@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-# @file      esekfom.py
+# @file      data_sampler.py
 # @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
 # Copyright (c) 2025 Junlong Jiang, all rights reserved
 
 import torch
 
+from model.local_point_cloud_map import LocalPointCloudMap
 from utils.config import Config
 from utils.tools import transform_torch
 
@@ -14,7 +15,7 @@ class DataSampler:
         self.config = config
         self.dev = config.device
 
-    def sample(self, points_torch, neural_points, cur_pose_torch):
+    def sample(self, points_torch, local_point_cloud_map: LocalPointCloudMap, cur_pose_torch):
         dev = self.dev
         surface_sample_range = self.config.surface_sample_range_m
         surface_sample_n = self.config.surface_sample_n
@@ -70,7 +71,7 @@ class DataSampler:
         surface_sample_count = point_num * surface_sample_n
         sample_points = all_sample_points[point_num:]
         sample_points_global = transform_torch(sample_points, cur_pose_torch)
-        dist, valid_mask = neural_points.region_specific_sdf_estimations(sample_points_global)
+        dist, valid_mask = local_point_cloud_map.region_specific_sdf_estimation(sample_points_global)
         mask[point_num:] = valid_mask
         surface_sample_sdf = sdf_sign * dist[:surface_sample_count]
         sdf_label = torch.cat((measured_sample_sdf, surface_sample_sdf, dist[surface_sample_count:]), 0)
