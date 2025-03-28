@@ -1,8 +1,8 @@
-torch
-rospkg
-catkin_pkg
-opencv-python
-scikit-image
+torch==2.5.1
+rospkg==1.5.1
+catkin_pkg==1.0.0
+opencv-python==4.11.0.86
+scikit-image==0.25.2
 plyfile==1.1
 evo==1.28.0
 gnupg==2.3.1
@@ -16,4 +16,4 @@ rerun-sdk==0.17.0
 rich==12.5.1
 roma==1.5.0
 rospkg==1.5.1
-wandb==0.17.0
+wandb==0.19.8
