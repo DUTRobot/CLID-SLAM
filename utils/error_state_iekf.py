@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @file      esekfom.py
+# @file      error_state_iekf.py
 # @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
 # Copyright (c) 2025 Junlong Jiang, all rights reserved
 
@@ -11,8 +11,8 @@ import torch
 from model.decoder import Decoder
 from model.neural_points import NeuralPoints
 from utils.config import Config
-from utils.tools import get_gradient, transform_torch, vectors_to_skew_symmetric
-from utils.so3_math import vec2skew, so3Exp, SO3Log
+from utils.so3_math import vec2skew, so3Exp, SO3Log, vectors_to_skew_symmetric
+from utils.tools import get_gradient, transform_torch
 
 G_m_s2 = 9.81  # 定义全局重力加速度
 
@@ -98,7 +98,7 @@ def boxminus(x1: StateIkfom, x2: StateIkfom):
     return delta
 
 
-class IESEKF:
+class IEKFOM:
     """扩展卡尔曼滤波器类"""
 
     def __init__(
@@ -116,7 +116,7 @@ class IESEKF:
         self.tran_dtype = config.tran_dtype
 
         self.x = StateIkfom(self.tran_dtype)                # 初始化状态
-        self.P = torch.eye(18, dtype=self.tran_dtype)       # 初始化状态协方差矩阵
+        self.P = torch.eye(18, dtype=self.tran_dtype)     # 初始化状态协方差矩阵
         self.P[9:12, 9:12] = self.P[9:12, 9:12] * 1e-4      # 初始陀螺仪偏置协方差
         self.P[12:15, 12:15] = self.P[12:15, 12:15] * 1e-3  # 初始加速度计协方差
         self.P[15:18, 15:18] = self.P[15:18, 15:18] * 1e-4  # 初始重力协方差

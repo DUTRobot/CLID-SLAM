@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# @file      esekfom.py
+# @file      rosbag2dataset_parallel.py
 # @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
 # Copyright (c) 2025 Junlong Jiang, all rights reserved
 import csv

@@ -1,6 +1,6 @@
 setting:
-  name: "UGV1_ours_slam"
-  output_root: "./experiments"
+  name: "SubT_MRS"
+  output_root: "./experiment"
   imu_path: "./dataset/SubT_MRS/Final_Challenge_UGV1/sequences/imu"
   pc_path: "./dataset/SubT_MRS/Final_Challenge_UGV1/sequences/lidar"
   pose_ts_path: "./dataset/SubT_MRS/Final_Challenge_UGV1/sequences/pose_ts.txt"
@@ -12,6 +12,7 @@ process:
   min_z_m: -10.0
   vox_down_m: 0.1
 sampler:
+  local_voxel_size_m: 0.2
   surface_sample_range_m: 0.25
   surface_sample_n: 4
   free_sample_begin_ratio: 0.8
