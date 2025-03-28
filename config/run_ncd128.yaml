@@ -1,0 +1,54 @@
+setting:
+  name: "ncd128"
+  output_root: "./experiment"
+  imu_path: "./dataset/ncd128/collection1/quad_easy/sequences/imu"
+  pc_path: "./dataset/ncd128/collection1/quad_easy/sequences/lidar"
+  pose_ts_path: "./dataset/ncd128/collection1/quad_easy/sequences/pose_ts.txt"
+  deskew: True
+
+process:
+  min_range_m: 1.0
+  max_range_m: 60.0
+  min_z_m: -10.0
+  vox_down_m: 0.1
+sampler:
+  local_voxel_size_m: 0.2
+  surface_sample_range_m: 0.25
+  surface_sample_n: 4
+  free_sample_begin_ratio: 0.5
+  free_sample_end_dist_m: 1.2
+  free_front_sample_n: 2
+neuralpoints:
+  voxel_size_m: 0.4
+  num_nei_cells: 2
+  search_alpha: 0.5
+  weighted_first: True
+loss:
+  sigma_sigmoid_m: 0.1
+  loss_weight_on: True
+  dist_weight_scale: 0.8
+continual:
+  batch_size_new_sample: 1000
+  pool_capacity: 1e7
+tracker:
+  measurement_noise_covariance: 0.01
+  bias_noise_covariance: 0.0001
+  source_vox_down_m: 0.6
+  iter_n: 50
+  T_imu_lidar:
+    - [ 1.0,   0,    0,  0.014 ]
+    - [   0, 1.0,    0, -0.012 ]
+    - [   0,   0,  1.0, -0.015 ]
+    - [   0,   0,    0,    1.0 ]
+optimizer:
+  iters: 10
+  batch_size: 16384
+  learning_rate: 0.01
+  adaptive_iters: True
+eval:
+  wandb_vis_on: False
+  o3d_vis_on: True
+  silence_log: True
+  mesh_freq_frame: 50
+  mesh_min_nn: 15
+  save_map: True

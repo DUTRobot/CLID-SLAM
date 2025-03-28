@@ -1,0 +1,8 @@
+input_bag: './dataset/ncd128/collection1/quad-easy.bag'
+output_folder: './dataset/ncd128/collection1/quad_easy'
+imu_topic: '/os_cloud_node/imu'
+lidar_topic: '/os_cloud_node/points'
+#imu_topic: '/imu/data'
+#lidar_topic: '/velodyne_points'
+batch_size: 100 # Number of messages per batch
+end_frame: -1 # -1 means process the entire bag file
