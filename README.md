@@ -12,6 +12,10 @@
     </p>
 </p>
 
+| Mesh                          | Neural Points                     |
+|-------------------------------|-----------------------------------|
+| ![Mesh](./assets/GUI_Mesh.png) | ![Neural Points](./assets/GUI_Neural_Points.png) |
+
 ## TODO 📝
 
 - [x] Release the source code
