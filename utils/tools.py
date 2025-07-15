@@ -27,7 +27,8 @@ import torch.nn as nn
 from tqdm import tqdm
 import wandb
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from matplotlib.cm import viridis
 from torch import optim
@@ -197,10 +198,12 @@ def seed_anything(seed):
     random.seed(seed)
     o3d.utility.random.seed(seed)
 
+
 def remove_gpu_cache():
     cuda_available = torch.cuda.is_available()
     if cuda_available:
         torch.cuda.empty_cache()
+
 
 def setup_optimizer(
     config: Config,
@@ -281,7 +284,6 @@ def step_lr_decay(
     steps: List,
     reduce: float = 1.0,
 ):
-
     if reduce > 1.0 or reduce <= 0.0:
         sys.exit("The decay reta should be between 0 and 1.")
 
@@ -327,12 +329,13 @@ def unfreeze_model(model: nn.Module):
 def freeze_decoders(mlp_dict, config):
     if not config.silence:
         print("Freeze the decoders")
-    
+
     keys = list(mlp_dict.keys())
     for key in keys:
         mlp = mlp_dict[key]
         if mlp is not None:
             freeze_model(mlp)
+
 
 def unfreeze_decoders(mlp_dict, config):
     if not config.silence:
@@ -344,9 +347,7 @@ def unfreeze_decoders(mlp_dict, config):
             unfreeze_model(mlp)
 
 
-def save_implicit_map(
-    run_path, neural_points, mlp_dict, with_footprint: bool = True
-):
+def save_implicit_map(run_path, neural_points, mlp_dict, with_footprint: bool = True):
     # together with the mlp decoders
 
     map_model = {"neural_points": neural_points}
@@ -370,7 +371,6 @@ def save_implicit_map(
 
 
 def load_decoders(loaded_model, mlp_dict, freeze_decoders: bool = True):
-
     for key in list(loaded_model.keys()):
         if key != "neural_points":
             if loaded_model[key] is not None:
@@ -380,8 +380,10 @@ def load_decoders(loaded_model, mlp_dict, freeze_decoders: bool = True):
 
     print("Pretrained decoders loaded")
 
+
 def create_bbx_o3d(center, half_size):
     return o3d.geometry.AxisAlignedBoundingBox(center - half_size, center + half_size)
+
 
 def get_time():
     """
@@ -391,6 +393,7 @@ def get_time():
     if cuda_available:  # issue #10
         torch.cuda.synchronize()
     return time.time()
+
 
 def track_progress():
     progress_bar = tqdm(desc="Processing", total=0, unit="calls")
@@ -402,31 +405,35 @@ def track_progress():
             progress_bar.update(1)
             progress_bar.set_description("Processing point cloud frame")
             return result
+
         wrapper.calls = 0
         return wrapper
+
     return decorator
+
 
 def is_prime(n):
     """Helper function to check if a number is prime."""
     if n < 2:
         return False
-    for i in range(2, int(n ** 0.5) + 1):
+    for i in range(2, int(n**0.5) + 1):
         if n % i == 0:
             return False
     return True
+
 
 def find_closest_prime(n):
     """Find the closest prime number to n."""
     if n < 2:
         return 2
-    
+
     if is_prime(n):
         return n
-        
+
     # Check numbers both above and below n
     lower = n - 1
     upper = n + 1
-    
+
     while True:
         if is_prime(lower):
             return lower
@@ -563,7 +570,7 @@ def quat_multiply(q1: torch.tensor, q2: torch.tensor):
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
 
-    return torch.stack((w, x, y, z), dim=1) # N, 4
+    return torch.stack((w, x, y, z), dim=1)  # N, 4
 
 
 def torch2o3d(points_torch):
@@ -724,7 +731,7 @@ def voxel_down_sample_min_value_torch(
 def split_chunks(
     pc: o3d.geometry.PointCloud(),
     aabb: o3d.geometry.AxisAlignedBoundingBox(),
-    chunk_m: float = 100.0
+    chunk_m: float = 100.0,
 ):
     """
     Split a large point cloud into bounding box chunks
@@ -817,7 +824,7 @@ def deskewing(
     ts = (ts - min_ts) / (max_ts - min_ts)
 
     # this is related to: https://github.com/PRBonn/kiss-icp/issues/299
-    ts -= ts_mid_pose 
+    ts -= ts_mid_pose
 
     rotmat_slerp = roma.rotmat_slerp(
         torch.eye(3).to(points), pose[:3, :3].to(points), ts
@@ -826,7 +833,9 @@ def deskewing(
     tran_lerp = ts[:, None] * pose[:3, 3].to(points)
 
     points_deskewd = points
-    points_deskewd[:, :3] = (rotmat_slerp @ points[:, :3].unsqueeze(-1)).squeeze(-1) + tran_lerp
+    points_deskewd[:, :3] = (rotmat_slerp @ points[:, :3].unsqueeze(-1)).squeeze(
+        -1
+    ) + tran_lerp
 
     return points_deskewd
 
@@ -848,16 +857,20 @@ def tranmat_close_to_identity(mats: np.ndarray, rot_thre: float, tran_thre: floa
     else:
         return False
 
-def feature_pca_torch(data, principal_components = None,
-                     principal_dim: int = 3,
-                     down_rate: int = 1,
-                     project_data: bool = True,
-                     normalize: bool = True):
-    """
-        do PCA to a NxD torch tensor to get the data along the K principle dimensions
-        N is the data count, D is the dimension of the data
 
-        We can also use a pre-computed principal_components for only the projection of input data
+def feature_pca_torch(
+    data,
+    principal_components=None,
+    principal_dim: int = 3,
+    down_rate: int = 1,
+    project_data: bool = True,
+    normalize: bool = True,
+):
+    """
+    do PCA to a NxD torch tensor to get the data along the K principle dimensions
+    N is the data count, D is the dimension of the data
+
+    We can also use a pre-computed principal_components for only the projection of input data
     """
 
     N, D = data.shape
@@ -868,10 +881,14 @@ def feature_pca_torch(data, principal_components = None,
     if principal_components is None:
         data_centered_for_compute = data_centered[::down_rate]
 
-        assert data_centered_for_compute.shape[0] > principal_dim, "not enough data for PCA computation, down_rate might be too large or original data count is too small"
+        assert data_centered_for_compute.shape[0] > principal_dim, (
+            "not enough data for PCA computation, down_rate might be too large or original data count is too small"
+        )
 
         # Step 2: Compute the covariance matrix (D x D)
-        cov_matrix = torch.matmul(data_centered_for_compute.T, data_centered_for_compute) / (N - 1)
+        cov_matrix = torch.matmul(
+            data_centered_for_compute.T, data_centered_for_compute
+        ) / (N - 1)
 
         # Step 3: Perform eigen decomposition of the covariance matrix
         eigenvalues, eigenvectors = torch.linalg.eig(cov_matrix)
@@ -880,26 +897,34 @@ def feature_pca_torch(data, principal_components = None,
 
         # Step 4: Sort eigenvalues and eigenvectors in descending order
         sorted_indices = torch.argsort(eigenvalues_r, descending=True)
-        principal_components = eigenvectors_r[:, sorted_indices[:principal_dim]]  # First 3 principal components
+        principal_components = eigenvectors_r[
+            :, sorted_indices[:principal_dim]
+        ]  # First 3 principal components
 
     data_pca = None
     if project_data:
         # Step 5: Project data onto the top 3 principal components
-        data_pca = torch.matmul(data_centered, principal_components) # N, D @ D, P
+        data_pca = torch.matmul(data_centered, principal_components)  # N, D @ D, P
 
         # normalize to show as rgb
-        if normalize: 
-
+        if normalize:
             # # deal with outliers
-            quantile_down_rate = 37 # quantile has count limit, downsample the data to avoid the limit
-            min_vals = torch.quantile(data_pca[::quantile_down_rate], 0.02, dim=0, keepdim=True)
-            max_vals = torch.quantile(data_pca[::quantile_down_rate], 0.98, dim=0, keepdim=True)
+            quantile_down_rate = (
+                37  # quantile has count limit, downsample the data to avoid the limit
+            )
+            min_vals = torch.quantile(
+                data_pca[::quantile_down_rate], 0.02, dim=0, keepdim=True
+            )
+            max_vals = torch.quantile(
+                data_pca[::quantile_down_rate], 0.98, dim=0, keepdim=True
+            )
 
             # Normalize to range [0, 1]
             data_pca.sub_(min_vals).div_(max_vals - min_vals)
             # data_pca = data_pca.clamp(0, 1)
 
     return data_pca, principal_components
+
 
 def plot_timing_detail(time_table: np.ndarray, saving_path: str, with_loop=False):
     """

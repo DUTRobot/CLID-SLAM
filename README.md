@@ -29,45 +29,47 @@
 - GPU (tested on RTX 4090)
 
 ### Steps
-1. **Clone the repository**
-    ```bash
-    git clone git@github.com:DUTRobot/CLID-SLAM.git
-    cd CLID-SLAM
-    ```
-   
-2. **Create Conda Environment**
-   ```bash
-   conda create -n slam python=3.12
-   conda activate slam
-   ```
 
-3. **Install PyTorch**
-   ```bash
-   pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-   ```
+```bash
+git clone git@github.com:DUTRobot/CLID-SLAM.git
+cd CLID-SLAM
 
-4. **Install ROS Dependencies**
-   ```bash
-   sudo apt install ros-noetic-rosbag ros-noetic-sensor-msgs
-   ```
+# create conda environment
+conda create -n slam python=3.12
+conda activate slam
 
-5. **Install Other Dependencies**
-   ```bash
-   pip3 install -r requirements.txt
-   ```
+# install pytorch
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+
+# install ROS dependencies
+sudo apt install ros-noetic-rosbag ros-noetic-sensor-msgs
+pip3 install -r requirements.txt
+```
 
 ## Data Preparation
 
 ### Download ROSbag Files
-Download these essential ROSbag datasets:
-- [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/)
+- [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/) 
+(also available on [Baidu Disk](https://pan.baidu.com/s/1yR92s4UGcphmGIqjo8pPCw?pwd=rrdf) due to Google Drive's maximum file size limit).
+
 - [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
 
 ### Convert to Sequences
-1. Edit `./dataset/converter/config/rosbag2dataset.yaml`.
-2. Run:
-   ```bash
-   python3 ./dataset/converter/rosbag2dataset_parallel.py
+- Edit `./dataset/converter/config/rosbag2dataset.yaml`.
+
+  ```yaml
+  input_bag: './dataset/ncd128/collection1/quad-easy.bag' # rosbag path
+  output_folder: './dataset/ncd128/collection1/quad_easy' 
+  imu_topic: '/os_cloud_node/imu' # imu topic name
+  lidar_topic: '/os_cloud_node/points' # lidar topic name
+  batch_size: 100 # Number of messages per batch
+  end_frame: -1 # -1 means process the entire bag file
+  ```
+
+- Run:
+  ```bash
+  python3 ./dataset/converter/rosbag2dataset_parallel.py
+  ```
 
 ## Run CLID-SLAM
 ```bash
@@ -75,4 +77,4 @@ python3 slam.py ./config/run_ncd128.yaml
 ```
 ## Acknowledgements 🙏
 
-This project is built upon the open-source project [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM), developed by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). A huge thanks to the contributors of **PIN-SLAM** for their outstanding work and dedication!
+This project builds on [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM) by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). We gratefully acknowledge their valuable contributions.
