@@ -2,16 +2,21 @@
 # @file      rosbag2dataset_parallel.py
 # @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
 # Copyright (c) 2025 Junlong Jiang, all rights reserved
+import sys
 import csv
 import os
+import cv2
 import yaml
-from multiprocessing import Process, Queue
-from typing import List, Tuple
-
-import numpy as np
 import rosbag
+import numpy as np
 import sensor_msgs.point_cloud2 as pc2
+from cv_bridge import CvBridge
+from typing import List, Tuple
 from plyfile import PlyData, PlyElement
+from multiprocessing import Process, Queue
+
+pc2.sys = sys  # 注入 sys，使其内部引用有效
+
 
 G_M_S2 = 9.81  # Gravitational constant in m/s^2
 
@@ -67,15 +72,29 @@ def process_lidar_data(
             print(f"Exported LiDAR point cloud PLY file: {ply_file_path}")
 
 
+def compressed_image_to_numpy(msg) -> np.ndarray:
+    """Convert sensor_msgs/CompressedImage to OpenCV BGR image (np.ndarray)."""
+    # msg.format 可能是 "jpeg", "png", "rgb8; jpeg compressed", etc.
+    np_arr = np.frombuffer(msg.data, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    if img is None:
+        raise ValueError("Failed to decode CompressedImage")
+    return img
+
+
 def sync_and_save(config: dict) -> None:
     """Synchronize and save LiDAR and IMU data from a ROS bag file."""
     os.makedirs(config["output_folder"], exist_ok=True)
     os.makedirs(os.path.join(config["output_folder"], "lidar"), exist_ok=True)
     os.makedirs(os.path.join(config["output_folder"], "imu"), exist_ok=True)
+    os.makedirs(os.path.join(config["output_folder"], "image"), exist_ok=True)
 
     in_bag = rosbag.Bag(config["input_bag"])
+    bridge = CvBridge()
 
     frame_index = 0
+    image_index = 0
     start_flag = False
     imu_last_timestamp = None
     imu_data_pool = []
@@ -86,9 +105,28 @@ def sync_and_save(config: dict) -> None:
     batch_lidar_data = []
 
     for topic, msg, t in in_bag.read_messages(
-        topics=[config["imu_topic"], config["lidar_topic"]]
+        topics=[config["imu_topic"], config["lidar_topic"], config["image_topic"]]
     ):
         current_timestamp = t.to_sec()
+
+        if topic == config["image_topic"]:
+            if not start_flag:
+                start_flag = True
+            try:
+                if msg._type == "sensor_msgs/Image":
+                    img = bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
+                elif msg._type == "sensor_msgs/CompressedImage":
+                    img = compressed_image_to_numpy(msg)
+                else:
+                    raise TypeError("Unsupported image type")
+                img_path = os.path.join(
+                    config["output_folder"], "image", f"{image_index}.png"
+                )
+                cv2.imwrite(img_path, img)
+                print(f"Exported image: {img_path}")
+                image_index += 1
+            except Exception as e:
+                print(f"[Warning] Failed to extract image: {e}")
 
         if topic == config["lidar_topic"]:
             if not start_flag:
@@ -107,8 +145,7 @@ def sync_and_save(config: dict) -> None:
                 processes.append(p)
                 batch_lidar_data = []
 
-            lidar_frame_timestamp = msg.header.stamp.to_sec()
-            lidar_timestamp_queue.put(lidar_frame_timestamp)
+            lidar_timestamp_queue.put(msg.header.stamp.to_sec())
 
             ply_file_path = os.path.join(
                 config["output_folder"], "lidar", f"{frame_index}.ply"

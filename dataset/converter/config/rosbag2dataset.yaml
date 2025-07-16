@@ -1,6 +1,7 @@
-input_bag: './dataset/ncd128/collection1/quad-easy.bag'
-output_folder: './dataset/ncd128/collection1/quad_easy'
-imu_topic: '/os_cloud_node/imu'
-lidar_topic: '/os_cloud_node/points'
+input_bag: '/home/jiang/hku1_converted.bag'
+output_folder: './dataset/hku/'
+imu_topic: '/livox/imu'
+lidar_topic: '/livox/pointcloud2'
+image_topic: "/left_camera/image/compressed"  # or /camera/color/image_raw
 batch_size: 100 # Number of messages per batch
 end_frame: -1 # -1 means process the entire bag file

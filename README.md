@@ -36,18 +36,18 @@
 ### Steps
 
 ```bash
+# Install Miniforge3
+wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh
+# Clone the repo
 git clone git@github.com:DUTRobot/CLID-SLAM.git
 cd CLID-SLAM
-
 # create conda environment
-conda create -n slam python=3.12
-conda activate slam
-
+mamba create -n ros_env python=3.11
+# Install ROS noetic
+mamba install ros-noetic-desktop-full -c robostack-noetic -c conda-forge
 # install pytorch
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-
-# install ROS dependencies
-sudo apt install ros-noetic-rosbag ros-noetic-sensor-msgs
 pip3 install -r requirements.txt
 ```
 
@@ -63,10 +63,11 @@ pip3 install -r requirements.txt
 - Edit `./dataset/converter/config/rosbag2dataset.yaml`.
 
   ```yaml
-  input_bag: './dataset/ncd128/collection1/quad-easy.bag' # rosbag path
-  output_folder: './dataset/ncd128/collection1/quad_easy' 
-  imu_topic: '/os_cloud_node/imu' # imu topic name
-  lidar_topic: '/os_cloud_node/points' # lidar topic name
+  input_bag: '/home/jiang/hku1_converted.bag'
+  output_folder: './dataset/hku/'
+  imu_topic: '/livox/imu'
+  lidar_topic: '/livox/pointcloud2'
+  image_topic: "/left_camera/image/compressed"  # or /camera/color/image_raw
   batch_size: 100 # Number of messages per batch
   end_frame: -1 # -1 means process the entire bag file
   ```
