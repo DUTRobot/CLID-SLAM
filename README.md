@@ -21,6 +21,11 @@
 - [x] Release the source code
 - [ ] Enhance the README.md
 - [ ] Include the theory derivations
+## Pipeline
+
+<div style="background-color:white; display:inline-block;">
+  <img src="./assets/pipeline.png" />
+</div>
 
 ## Installation
 
