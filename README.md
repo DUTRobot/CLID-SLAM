@@ -18,9 +18,12 @@
 
 ## TODO 📝
 
-- [x] Release the source code
-- [ ] Enhance the README.md
-- [ ] Include the theory derivations
+- [x] Source code has been released  
+- [x] README has been improved  
+- [ ] To include theoretical derivations  
+- [ ] Implement high-performance `cuda_neural_points` backend for acceleration
+
+
 ## Pipeline
 
 <div style="background-color:white; display:inline-block;">
@@ -47,7 +50,7 @@ mamba create -n ros_env python=3.11
 # Install ROS noetic
 mamba install ros-noetic-desktop-full -c robostack-noetic -c conda-forge
 # install pytorch
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 pip3 install -r requirements.txt
 ```
 
