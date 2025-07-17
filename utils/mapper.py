@@ -45,7 +45,6 @@ class Mapper:
         sem_mlp: Decoder = None,
         color_mlp: Decoder = None,
     ):
-
         self.config = config
         self.silence = config.silence
         self.dataset = dataset
@@ -85,16 +84,21 @@ class Mapper:
 
         # data pool
         self.coord_pool = torch.empty((0, 3), device=self.device, dtype=self.dtype)
-        self.global_coord_pool = torch.empty((0, 3), device=self.device, dtype=self.dtype)
+        self.global_coord_pool = torch.empty(
+            (0, 3), device=self.device, dtype=self.dtype
+        )
         self.sdf_label_pool = torch.empty((0), device=self.device, dtype=self.dtype)
-        self.color_pool = torch.empty((0, self.config.color_channel), device=self.device, dtype=self.dtype)
+        self.color_pool = torch.empty(
+            (0, self.config.color_channel), device=self.device, dtype=self.dtype
+        )
         self.sem_label_pool = torch.empty((0), device=self.device, dtype=torch.int)
-        self.normal_label_pool = torch.empty((0, 3), device=self.device, dtype=self.dtype)
+        self.normal_label_pool = torch.empty(
+            (0, 3), device=self.device, dtype=self.dtype
+        )
         self.weight_pool = torch.empty((0), device=self.device, dtype=self.dtype)
         self.time_pool = torch.empty((0), device=self.device, dtype=torch.int)
 
     def dynamic_filter(self, points_torch, type_2_on: bool = True):
-
         if type_2_on:
             points_torch.requires_grad_(True)
 
@@ -134,25 +138,24 @@ class Mapper:
         return static_mask
 
     def determine_used_pose(self):
-        
         cur_frame = self.dataset.processed_frame
         if self.config.pgo_on:
             self.used_poses = torch.tensor(
-                self.dataset.pgo_poses[:cur_frame+1],
+                self.dataset.pgo_poses[: cur_frame + 1],
                 device=self.device,
                 dtype=torch.float64,
             )
         elif self.config.track_on:
             self.used_poses = torch.tensor(
-                self.dataset.odom_poses[:cur_frame+1],
+                self.dataset.odom_poses[: cur_frame + 1],
                 device=self.device,
                 dtype=torch.float64,
             )
         elif self.dataset.gt_pose_provided:  # for pure reconstruction with known pose
             self.used_poses = torch.tensor(
-                self.dataset.gt_poses[:cur_frame+1],
-                device=self.device, 
-                dtype=torch.float64
+                self.dataset.gt_poses[: cur_frame + 1],
+                device=self.device,
+                dtype=torch.float64,
             )
 
     def process_frame(
@@ -163,7 +166,6 @@ class Mapper:
         frame_id: int,
         filter_dynamic: bool = False,
     ):
-
         # points_torch contains both the coordinate and the color (intensity)
         # frame_id is the actually used frame id starting from 0 with no skip, 0, 1, 2, ......
 
@@ -176,8 +178,11 @@ class Mapper:
         frame_point_torch = point_cloud_torch[:, :3]
 
         ####################################### Added By Jiang Junlong #################################################
-        local_map_update_points = transform_torch(frame_point_torch, cur_pose_torch)
-        self.local_point_cloud_map.update_map(frame_origin_torch, local_map_update_points)
+        if not self.config.use_pin_mapper:
+            local_map_update_points = transform_torch(frame_point_torch, cur_pose_torch)
+            self.local_point_cloud_map.update_map(
+                frame_origin_torch, local_map_update_points
+            )
         ####################################### Added By Jiang Junlong #################################################
 
         # dynamic filtering
@@ -186,7 +191,9 @@ class Mapper:
         )
         if filter_dynamic:
             # reset local map (consider the frame description for loop with latency)
-            self.neural_points.reset_local_map(frame_origin_torch, frame_orientation_torch, frame_id)
+            self.neural_points.reset_local_map(
+                frame_origin_torch, frame_orientation_torch, frame_id
+            )
 
             # transformed to the global frame
             frame_point_torch_global = transform_torch(
@@ -209,35 +216,41 @@ class Mapper:
                 frame_label_torch = frame_label_torch[self.static_mask]
 
         frame_normal_torch = None  # not used yet
-        
+
         self.dataset.static_mask = self.static_mask
 
         T1 = get_time()
 
         ##################################### Changed By Jiang Junlong #################################################
-
-        # Original
-        # sampling data for training
-        # (
-        #     coord,
-        #     sdf_label,
-        #     normal_label,
-        #     sem_label,
-        #     color_label,
-        #     weight,
-        # ) = self.sampler.sample(
-        #     frame_point_torch, frame_normal_torch, frame_label_torch, frame_color_torch
-        # )
-        # coord is in sensor local frame
-
-        # The proposed region-specific SDF estimation method
-        normal_label, sem_label, color_label = None, None, None
-        (coord, sdf_label, weight) = self.sampler.sample(frame_point_torch, self.local_point_cloud_map, cur_pose_torch)
-
+        if self.config.use_pin_mapper:
+            # Original
+            # sampling data for training
+            (
+                coord,
+                sdf_label,
+                normal_label,
+                sem_label,
+                color_label,
+                weight,
+            ) = self.sampler.sample_pin(
+                frame_point_torch,
+                frame_normal_torch,
+                frame_label_torch,
+                frame_color_torch,
+            )
+            # coord is in sensor local frame
+        else:
+            # The proposed region-specific SDF estimation method
+            normal_label, sem_label, color_label = None, None, None
+            (coord, sdf_label, weight) = self.sampler.sample(
+                frame_point_torch, self.local_point_cloud_map, cur_pose_torch
+            )
 
         ##################################### Changed By Jiang Junlong #################################################
 
-        time_repeat = torch.tensor(frame_id, dtype=torch.int, device=self.device).repeat(coord.shape[0])
+        time_repeat = torch.tensor(
+            frame_id, dtype=torch.int, device=self.device
+        ).repeat(coord.shape[0])
 
         self.cur_sample_count = sdf_label.shape[0]  # before filtering
         self.pool_sample_count = self.sdf_label_pool.shape[0]
@@ -260,10 +273,12 @@ class Mapper:
             update_points = transform_torch(frame_point_torch, cur_pose_torch)
 
         # prune map and recreate hash
-        if self.config.prune_map_on and ((frame_id + 1) % self.config.prune_freq_frame == 0):
+        if self.config.prune_map_on and (
+            (frame_id + 1) % self.config.prune_freq_frame == 0
+        ):
             if self.neural_points.prune_map(self.config.max_prune_certainty):
                 self.neural_points.recreate_hash(None, None, True, True, frame_id)
-        
+
         # update map and judge how much new observations are gained
         self.cur_new_point_ratio = self.neural_points.update(
             update_points, frame_origin_torch, frame_orientation_torch, frame_id
@@ -271,7 +286,7 @@ class Mapper:
 
         # if not much new information we do not need to do much mapping
         # if not self.config.silence:
-        #     print("New observation ratio:", self.cur_new_point_ratio) 
+        #     print("New observation ratio:", self.cur_new_point_ratio)
 
         # local map is also updated here
 
@@ -340,9 +355,9 @@ class Mapper:
                 discarded_index = torch.randint(
                     0, pool_sample_count, (discard_count,), device=self.device
                 )
-                filter_mask[
-                    true_indices[discarded_index]
-                ] = False  # Set the elements corresponding to the discard indices to False
+                filter_mask[true_indices[discarded_index]] = (
+                    False  # Set the elements corresponding to the discard indices to False
+                )
 
             # filter the data pool
             self.coord_pool = self.coord_pool[filter_mask]
@@ -382,7 +397,6 @@ class Mapper:
         if (
             self.config.bs_new_sample > 0
         ):  # learn more in the region that is newly observed
-
             cur_sample_filtered = self.global_coord_pool[
                 -self.cur_sample_count :
             ]  # newly added samples
@@ -422,7 +436,9 @@ class Mapper:
                 )
             )[0]
 
-            self.new_idx += (self.pool_sample_count - self.cur_sample_count)  # new idx in the data pool
+            self.new_idx += (
+                self.pool_sample_count - self.cur_sample_count
+            )  # new idx in the data pool
 
             new_sample_count = self.new_idx.shape[0]
             # if not self.silence:
@@ -457,7 +473,6 @@ class Mapper:
 
     # get a batch of training samples and labels for map optimization
     def get_batch(self, global_coord=False):
-
         if (
             self.config.bs_new_sample > 0
             and self.new_idx is not None
@@ -511,7 +526,6 @@ class Mapper:
 
     # get a batch of training samples (only those measured end points) and labels for local bundle adjustment
     def get_ba_samples(self, subsample_count):
-
         surface_sample_idx = torch.where(self.sdf_label_pool == 0)[0]
         surface_sample_count = surface_sample_idx.shape[0]
 
@@ -539,7 +553,6 @@ class Mapper:
 
     # for visualization
     def get_data_pool_o3d(self, down_rate=1, only_cur_data=False):
-
         if only_cur_data:
             pool_coord_np = (
                 self.global_coord_pool[-self.cur_sample_count :: 3]
@@ -562,7 +575,7 @@ class Mapper:
 
         if self.sdf_label_pool is None:
             return data_pool_pc_o3d
-            
+
         if only_cur_data:
             pool_label_np = (
                 self.sdf_label_pool[-self.cur_sample_count :: 3]
@@ -587,7 +600,9 @@ class Mapper:
         )
 
         color_map = cm.get_cmap("seismic")
-        colors = color_map(1.0 - pool_label_np)[:, :3].astype(np.float64) # change to blue (+) ---> red (-)
+        colors = color_map(1.0 - pool_label_np)[:, :3].astype(
+            np.float64
+        )  # change to blue (+) ---> red (-)
 
         data_pool_pc_o3d.colors = o3d.utility.Vector3dVector(colors)
 
@@ -605,7 +620,6 @@ class Mapper:
     # PIN map online training (mapping) given the fixed pose
     # the main training function
     def mapping(self, iter_count):
-
         iter_count = max(1, iter_count + self.adaptive_iter_offset)
 
         neural_point_feat = list(self.neural_points.parameters())
@@ -854,7 +868,6 @@ class Mapper:
     def bundle_adjustment(
         self, iter_count, window_size: int = 50, use_lie_group: bool = False
     ):
-
         import pypose as pp
 
         current_poses_mat = self.used_poses
@@ -871,17 +884,25 @@ class Mapper:
                 current_poses_mat[:-opt_window_size], ltype=pp.SE3_type, check=False
             )  # fixed part
         else:  # se3
-            current_poses_se3_opt = torch.nn.Parameter(pp.from_matrix(current_poses_mat[-opt_window_size:], ltype=pp.SE3_type, check=False).Log())    
+            current_poses_se3_opt = torch.nn.Parameter(
+                pp.from_matrix(
+                    current_poses_mat[-opt_window_size:], ltype=pp.SE3_type, check=False
+                ).Log()
+            )
             # optimizable part
-            poses_se3_fix = pp.from_matrix(current_poses_mat[:-opt_window_size], ltype=pp.SE3_type, check=False).Log()    
+            poses_se3_fix = pp.from_matrix(
+                current_poses_mat[:-opt_window_size], ltype=pp.SE3_type, check=False
+            ).Log()
             # fixed part
 
         neural_point_feat = list(self.neural_points.parameters())
 
         # also add the poses as param here, for pose refinement (bundle ajustment)
         opt = setup_optimizer(
-            self.config, neural_point_feat, 
-            poses=current_poses_se3_opt, lr_ratio=self.config.lr_ba_map/self.config.lr
+            self.config,
+            neural_point_feat,
+            poses=current_poses_se3_opt,
+            lr_ratio=self.config.lr_ba_map / self.config.lr,
         )
 
         for iter in tqdm(range(iter_count), disable=self.silence):
@@ -929,11 +950,15 @@ class Mapper:
         updated_poses_np = updated_poses_mat.cpu().numpy()
 
         if self.config.pgo_on:
-            self.dataset.pgo_poses[:self.dataset.processed_frame+1] = updated_poses_np
+            self.dataset.pgo_poses[: self.dataset.processed_frame + 1] = (
+                updated_poses_np
+            )
             # odom pose would not be changed in this case (odom pose is without ba)
             # update pgo odom edge
         elif self.config.track_on:
-            self.dataset.odom_poses[:self.dataset.processed_frame+1] = updated_poses_np
+            self.dataset.odom_poses[: self.dataset.processed_frame + 1] = (
+                updated_poses_np
+            )
 
         # FIXME
         self.dataset.cur_pose_ref = updated_poses_np[-1]
@@ -960,7 +985,6 @@ class Mapper:
 
     # get numerical gradient (smoother than analytical one) with a fixed step
     def get_numerical_gradient(self, x, sdf_x=None, eps=0.02, two_side=True):
-
         N = x.shape[0]
 
         eps_x = torch.tensor([eps, 0.0, 0.0], dtype=x.dtype, device=x.device)  # [3]
@@ -1013,7 +1037,6 @@ class Mapper:
 
     # as the strategy in Neuralangelo, [not used]
     def get_numerical_gradient_multieps(self, x, sdf_x, certainty, eps, two_side=True):
-
         N = x.shape[0]
 
         eps_vec = torch.ones_like(certainty) * eps
