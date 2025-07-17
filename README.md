@@ -1,16 +1,16 @@
+<h1 align="center">⚔️CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM With Region-Specific SDF Estimation</h1>
+
 <p align="center">
-  <h1 align="center">⚔️CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM with Region-Specific SDF Estimation</h1>
-  <p align="center">
-    <a href="https://github.com/DUTRobot/CLID-SLAM/releases"><img src="https://img.shields.io/github/v/release/DUTRobot/CLID-SLAM?label=version" /></a>
-    <a href="https://ieeexplore.ieee.org/abstract/document/10884955"><img src="https://img.shields.io/badge/Paper-IEEE RAL-004088.svg" /></a>
-    <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54" /></a>
-    <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black" /></a>
-    <a href="https://github.com/DUTRobot/CLID-SLAM/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
-    <a href="https://github.com/DUTRobot/CLID-SLAM/stargazers"><img src="https://img.shields.io/github/stars/DUTRobot/CLID-SLAM.svg" /></a>
-    <a href="https://github.com/DUTRobot/CLID-SLAM/network/members"><img alt="FORK" src="https://img.shields.io/github/forks/DUTRobot/CLID-SLAM?color=FF8000" /></a>
-    <a href="https://github.com/DUTRobot/CLID-SLAM/issues"><img alt="Issues" src="https://img.shields.io/github/issues/DUTRobot/CLID-SLAM?color=0088ff"/></a>
-    </p>
+  <a href="https://github.com/DUTRobot/CLID-SLAM/releases"><img src="https://img.shields.io/github/v/release/DUTRobot/CLID-SLAM?label=version" /></a>
+  <a href="https://ieeexplore.ieee.org/abstract/document/10884955"><img src="https://img.shields.io/badge/Paper-IEEE RAL-004088.svg" /></a>
+  <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54" /></a>
+  <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black" /></a>
+  <a href="https://github.com/DUTRobot/CLID-SLAM/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
+  <a href="https://github.com/DUTRobot/CLID-SLAM/stargazers"><img src="https://img.shields.io/github/stars/DUTRobot/CLID-SLAM.svg" /></a>
+  <a href="https://github.com/DUTRobot/CLID-SLAM/network/members"><img alt="FORK" src="https://img.shields.io/github/forks/DUTRobot/CLID-SLAM?color=FF8000" /></a>
+  <a href="https://github.com/DUTRobot/CLID-SLAM/issues"><img alt="Issues" src="https://img.shields.io/github/issues/DUTRobot/CLID-SLAM?color=0088ff"/></a>
 </p>
+
 
 | Mesh                          | Neural Points                     |
 |-------------------------------|-----------------------------------|
@@ -18,10 +18,14 @@
 
 ## TODO 📝
 
-- [x] Release the source code
-- [ ] Enhance the README.md
-- [ ] Include the theory derivations
+- [x] Source code has been released  
+- [x] README has been improved  
+- [ ] To include theoretical derivations  
+- [ ] Implement high-performance `cuda_neural_points` backend for acceleration *(under construction)*
+
+
 ## Pipeline
+**TL;DR:** CLID-SLAM is a tightly-coupled LiDAR-Inertial Odometry and dense Mapping framework, which utilizes the Iterated Error-State Extended Kalman Filter (IESEKF) to fuse Signed Distance Function (SDF) predictions and IMU data to improve robustness.
 
 <div style="background-color:white; display:inline-block;">
   <img src="./assets/pipeline.png" />
@@ -47,7 +51,7 @@ mamba create -n ros_env python=3.11
 # Install ROS noetic
 mamba install ros-noetic-desktop-full -c robostack-noetic -c conda-forge
 # install pytorch
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 pip3 install -r requirements.txt
 ```
 

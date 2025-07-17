@@ -18,6 +18,7 @@ from utils.config import Config
 from utils.semantic_kitti_utils import sem_kitti_color_map
 from utils.tools import remove_gpu_cache
 
+
 class Mesher:
     def __init__(
         self,
@@ -25,7 +26,6 @@ class Mesher:
         neural_points: NeuralPoints,
         decoders: dict,
     ):
-
         self.config = config
         self.silence = config.silence
         self.neural_points = neural_points
@@ -323,7 +323,9 @@ class Mesher:
         sdf_pred_show = np.clip((sdf_pred - min_sdf) / (max_sdf - min_sdf), 0.0, 1.0)
 
         color_map = cm.get_cmap(cmap)  # or 'jet'
-        colors = color_map(1.0 - sdf_pred_show)[:, :3].astype(np.float64) # change to blue (+) --> red (-)
+        colors = color_map(1.0 - sdf_pred_show)[:, :3].astype(
+            np.float64
+        )  # change to blue (+) --> red (-)
 
         sdf_map_pc = o3d.geometry.PointCloud()
         sdf_map_pc.points = o3d.utility.Vector3dVector(coord_np)
@@ -458,7 +460,14 @@ class Mesher:
         return mesh
 
     def generate_bbx_sdf_hor_slice(
-        self, bbx, slice_z, voxel_size, query_locally=False, min_sdf=-1.0, max_sdf=1.0, mask_min_nn_count=5
+        self,
+        bbx,
+        slice_z,
+        voxel_size,
+        query_locally=False,
+        min_sdf=-1.0,
+        max_sdf=1.0,
+        mask_min_nn_count=5,
     ):
         """
         Generate the SDF slice at height (slice_z)
@@ -482,7 +491,14 @@ class Mesher:
         return sdf_map_pc
 
     def generate_bbx_sdf_ver_slice(
-        self, bbx, slice_x, voxel_size, query_locally=False, min_sdf=-1.0, max_sdf=1.0, mask_min_nn_count=5
+        self,
+        bbx,
+        slice_x,
+        voxel_size,
+        query_locally=False,
+        min_sdf=-1.0,
+        max_sdf=1.0,
+        mask_min_nn_count=5,
     ):
         """
         Generate the SDF slice at x position (slice_x)
@@ -525,7 +541,7 @@ class Mesher:
         """
         if not self.silence:
             print("# Chunk for meshing: ", len(aabbs))
-            
+
         mesh_merged = o3d.geometry.TriangleMesh()
         for bbx in tqdm(aabbs, disable=self.silence):
             cur_mesh = self.recon_aabb_mesh(
@@ -543,7 +559,7 @@ class Mesher:
             )
             mesh_merged += cur_mesh
 
-            remove_gpu_cache() # deal with high GPU memory consumption when meshing (TODO)
+            remove_gpu_cache()  # deal with high GPU memory consumption when meshing (TODO)
 
         mesh_merged.remove_duplicated_vertices()
 

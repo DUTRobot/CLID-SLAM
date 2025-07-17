@@ -111,7 +111,8 @@ def sync_and_save(config: dict) -> None:
 
         if topic == config["image_topic"]:
             if not start_flag:
-                start_flag = True
+                # start_flag = True
+                continue
             try:
                 if msg._type == "sensor_msgs/Image":
                     img = bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
@@ -120,7 +121,7 @@ def sync_and_save(config: dict) -> None:
                 else:
                     raise TypeError("Unsupported image type")
                 img_path = os.path.join(
-                    config["output_folder"], "image", f"{image_index}.png"
+                    config["output_folder"], "image", f"{frame_index}.png"
                 )
                 cv2.imwrite(img_path, img)
                 print(f"Exported image: {img_path}")
@@ -183,7 +184,7 @@ def sync_and_save(config: dict) -> None:
         p.join()
 
     with open(
-        os.path.join(config["output_folder"], "pose_timestamps.txt"), "w", newline=""
+        os.path.join(config["output_folder"], "pose_ts.txt"), "w", newline=""
     ) as file:
         print("Writing pose timestamps...")
         writer = csv.writer(file)
