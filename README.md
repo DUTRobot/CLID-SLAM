@@ -21,8 +21,6 @@
 - [x] Source code has been released  
 - [x] README has been improved  
 - [ ] To include theoretical derivations  
-- [ ] Implement high-performance `cuda_neural_points` backend for acceleration *(under construction)*
-
 
 ## Pipeline
 **TL;DR:** CLID-SLAM is a tightly-coupled LiDAR-Inertial Odometry and dense Mapping framework, which utilizes the Iterated Error-State Extended Kalman Filter (IESEKF) to fuse Signed Distance Function (SDF) predictions and IMU data to improve robustness.
