@@ -12,28 +12,18 @@
 </p>
 
 
-| Mesh                          | Neural Points                     |
-|-------------------------------|-----------------------------------|
-| ![Mesh](./assets/GUI_Mesh.png) | ![Neural Points](./assets/GUI_Neural_Points.png) |
-
-## TODO 📝
-
-- [x] Source code has been released  
-- [x] README has been improved  
-- [ ] To include theoretical derivations  
-
-## Pipeline
-**TL;DR:** CLID-SLAM is a tightly-coupled LiDAR-Inertial Odometry and dense Mapping framework, which utilizes the Iterated Error-State Extended Kalman Filter (IESEKF) to fuse Signed Distance Function (SDF) predictions and IMU data to improve robustness.
-
+![Mapping result](./assets/Mapping_result.png)
 <div style="background-color:white; display:inline-block;">
   <img src="./assets/pipeline.png" />
 </div>
 
+
+**TL;DR:** CLID-SLAM is a tightly-coupled LiDAR-Inertial Odometry and dense Mapping framework, which utilizes the Iterated Error-State Extended Kalman Filter (IESEKF) to fuse Signed Distance Function (SDF) predictions and IMU data to improve robustness.
+
 ## Installation
 
 ### Platform Requirements
-- Ubuntu 20.04
-- GPU (tested on RTX 4090)
+We tested our code on Ubuntu 20.04 with an NVIDIA RTX 4090.
 
 ### Steps
 
@@ -56,13 +46,13 @@ pip3 install -r requirements.txt
 ## Data Preparation
 
 ### Download ROSbag Files
-- [**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/) 
+[**Newer College Dataset**](https://ori-drs.github.io/newer-college-dataset/) 
 (also available on [Baidu Disk](https://pan.baidu.com/s/1yR92s4UGcphmGIqjo8pPCw?pwd=rrdf) due to Google Drive's maximum file size limit).
 
-- [**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
+[**SubT-MRS Dataset**](https://superodometry.com/iccv23_challenge_LiI)
 
 ### Convert to Sequences
-- Edit `./dataset/converter/config/rosbag2dataset.yaml`.
+Edit `./dataset/converter/config/rosbag2dataset.yaml`.
 
   ```yaml
   input_bag: '/home/jiang/hku1_converted.bag'
@@ -74,12 +64,12 @@ pip3 install -r requirements.txt
   end_frame: -1 # -1 means process the entire bag file
   ```
 
-- Run:
+Run: 
   ```bash
   python3 ./dataset/converter/rosbag2dataset_parallel.py
   ```
 
-## Run CLID-SLAM
+## How to run it
 ```bash
 python3 slam.py ./config/run_ncd128.yaml
 ```
