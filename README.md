@@ -1,6 +1,7 @@
-<h1 align="center">CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM With Region-Specific SDF Estimation</h1>
+# <div align = "center">CLID-SLAM:</div>
+### <div align = "center">A Coupled LiDAR-Inertial Neural Implicit Dense SLAM With Region-Specific SDF Estimation</div>
 
-<p align="center">
+<div align="center">
   <a href="https://github.com/DUTRobot/CLID-SLAM/releases"><img src="https://img.shields.io/github/v/release/DUTRobot/CLID-SLAM?label=version" /></a>
   <a href="https://ieeexplore.ieee.org/abstract/document/10884955"><img src="https://img.shields.io/badge/Paper-IEEE RAL-004088.svg" /></a>
   <a href="https://github.com/DUTRobot/CLID-SLAM"><img src="https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54" /></a>
@@ -9,7 +10,7 @@
   <a href="https://github.com/DUTRobot/CLID-SLAM/stargazers"><img src="https://img.shields.io/github/stars/DUTRobot/CLID-SLAM.svg" /></a>
   <a href="https://github.com/DUTRobot/CLID-SLAM/network/members"><img alt="FORK" src="https://img.shields.io/github/forks/DUTRobot/CLID-SLAM?color=FF8000" /></a>
   <a href="https://github.com/DUTRobot/CLID-SLAM/issues"><img alt="Issues" src="https://img.shields.io/github/issues/DUTRobot/CLID-SLAM?color=0088ff"/></a>
-</p>
+</div>
 
 
 ![Mapping result](./assets/Mapping_result.png)
@@ -73,6 +74,6 @@ Run:
 ```bash
 python3 slam.py ./config/run_ncd128.yaml
 ```
-## Acknowledgements 🙏
+## Acknowledgements
 
 This project builds on [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM) by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). We gratefully acknowledge their valuable contributions.
