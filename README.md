@@ -1,4 +1,4 @@
-<h1 align="center">⚔️CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM With Region-Specific SDF Estimation</h1>
+<h1 align="center">CLID-SLAM: A Coupled LiDAR-Inertial Neural Implicit Dense SLAM With Region-Specific SDF Estimation</h1>
 
 <p align="center">
   <a href="https://github.com/DUTRobot/CLID-SLAM/releases"><img src="https://img.shields.io/github/v/release/DUTRobot/CLID-SLAM?label=version" /></a>
