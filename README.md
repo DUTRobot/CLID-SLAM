@@ -73,6 +73,6 @@ Run:
 ```bash
 python3 slam.py ./config/run_ncd128.yaml
 ```
-## Acknowledgements 🙏
+## Acknowledgements
 
 This project builds on [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM) by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). We gratefully acknowledge their valuable contributions.
