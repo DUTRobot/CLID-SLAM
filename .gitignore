@@ -1,5 +1,5 @@
 .idea
 .vscode
-model/__pycache__
 gui/__pycache__
 utils/__pycache__
+model/__pycache__

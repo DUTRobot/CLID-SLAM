@@ -3,24 +3,21 @@
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 # Copyright (c) 2024 Yue Pan, all rights reserved
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from utils.config import Config
 
 
 class Decoder(nn.Module):
     def __init__(
-            self,
-            config: Config,
-            hidden_dim,
-            hidden_level,
-            out_dim,
-            is_time_conditioned=False,
+        self,
+        config: Config,
+        hidden_dim,
+        hidden_level,
+        out_dim,
+        is_time_conditioned=False,
     ):
-
         super().__init__()
 
         self.out_dim = out_dim

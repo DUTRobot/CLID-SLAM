@@ -2,18 +2,18 @@
 # @file      eval_traj_utils.py
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 # Copyright (c) 2024 Yue Pan, all rights reserved
-
+import numpy as np
+import matplotlib.pyplot as plt
 from collections import defaultdict
 from typing import Dict, List, Tuple
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def absolute_error(
     poses_gt: np.ndarray, poses_result: np.ndarray, align_on: bool = True
 ):
-    assert poses_gt.shape[0] == poses_result.shape[0], "poses length should be identical"
+    assert poses_gt.shape[0] == poses_result.shape[0], (
+        "poses length should be identical"
+    )
     align_mat = np.eye(4)
     if align_on:
         align_rot, align_tran, _ = align_traj(poses_result, poses_gt)
@@ -30,7 +30,7 @@ def absolute_error(
         cur_gt_pose = poses_gt[i]
         delta_rot = (
             np.linalg.inv(cur_gt_pose[:3, :3]) @ cur_results_pose_aligned[:3, :3]
-        ) 
+        )
         delta_tran = cur_gt_pose[:3, 3] - cur_results_pose_aligned[:3, 3]
 
         # the one used for kiss-icp
@@ -45,7 +45,9 @@ def absolute_error(
     rot_errors = np.array(rot_errors)
     tran_errors = np.array(tran_errors)
 
-    rot_rmse = np.sqrt(np.dot(rot_errors, rot_errors) / frame_count) * 180.0 / np.pi # this seems to have some problem
+    rot_rmse = (
+        np.sqrt(np.dot(rot_errors, rot_errors) / frame_count) * 180.0 / np.pi
+    )  # this seems to have some problem
     tran_rmse = np.sqrt(np.dot(tran_errors, tran_errors) / frame_count)
 
     # rot_mean = np.mean(rot_errors)
@@ -61,10 +63,9 @@ def absolute_error(
 
 
 def align_traj(poses_np_1, poses_np_2):
+    traj_1 = poses_np_1[:, :3, 3].squeeze().T
+    traj_2 = poses_np_2[:, :3, 3].squeeze().T
 
-    traj_1 = poses_np_1[:,:3,3].squeeze().T
-    traj_2 = poses_np_2[:,:3,3].squeeze().T
-    
     return align(traj_1, traj_2)
 
 
@@ -119,7 +120,9 @@ def relative_error(poses_gt, poses_result):
             - length: evaluation trajectory length
             - speed: car speed (#FIXME: 10FPS is assumed)
     """
-    assert poses_gt.shape[0] == poses_result.shape[0], "poses length should be identical"
+    assert poses_gt.shape[0] == poses_result.shape[0], (
+        "poses length should be identical"
+    )
     err = []
     dist = trajectory_distances(poses_gt)
     step_size = 10
@@ -181,9 +184,9 @@ def trajectory_distances(poses_np):
     dist = [0]
 
     for i in range(poses_np.shape[0] - 1):
-        rela_dist = np.linalg.norm(poses_np[i+1] - poses_np[i])
+        rela_dist = np.linalg.norm(poses_np[i + 1] - poses_np[i])
         dist.append(dist[i] + rela_dist)
-        
+
     return dist
 
 

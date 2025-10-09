@@ -5,11 +5,9 @@
 # Modifications by:
 # Junlong Jiang [jiangjunlong@mail.dlut.edu.cn]
 # Copyright (c) 2025 Junlong Jiang, all rights reserved.
-
 import os
-
-import torch
 import yaml
+import torch
 
 
 class Config:

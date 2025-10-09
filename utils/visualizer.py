@@ -5,14 +5,11 @@
 
 # Adapted from Nacho's awesome lidar visualizer (https://github.com/PRBonn/lidar-visualizer)
 # This is deprecated, now we use the GUI in gui/slam_gui.py
-
 import os
-from functools import partial
-from typing import Callable, List
-
 import numpy as np
 import open3d as o3d
-
+from functools import partial
+from typing import Callable, List
 from utils.config import Config
 
 YELLOW = np.array([1, 0.706, 0])
@@ -28,7 +25,6 @@ LIGHTBLUE = np.array([0.00, 0.65, 0.93])
 class MapVisualizer:
     # Public Interaface ----------------------------------------------------------------------------
     def __init__(self, config: Config = None):
-
         # Initialize GUI controls
         self.block_vis = True
         self.play_crun = True
@@ -462,7 +458,6 @@ class MapVisualizer:
         neural_points=None,
         data_pool=None,
     ):
-
         # Scan (toggled by "F")
         if self.render_pointcloud:
             if scan is not None:
@@ -587,19 +582,24 @@ class MapVisualizer:
         pgo_poses_np=None,
         loop_edges=None,
     ):
-
         self.vis.remove_geometry(self.odom_traj, self.reset_bounding_box)
         self.vis.remove_geometry(self.gt_traj, self.reset_bounding_box)
         self.vis.remove_geometry(self.pgo_traj, self.reset_bounding_box)
         self.vis.remove_geometry(self.pgo_edges, self.reset_bounding_box)
 
-        if (self.render_trajectory and odom_poses_np is not None and odom_poses_np.shape[0] > 1):
+        if (
+            self.render_trajectory
+            and odom_poses_np is not None
+            and odom_poses_np.shape[0] > 1
+        ):
             if pgo_poses_np is not None and (not self.render_odom_trajectory):
                 self.odom_traj = o3d.geometry.LineSet()
             else:
                 odom_position_np = odom_poses_np[:, :3, 3]
                 self.odom_traj.points = o3d.utility.Vector3dVector(odom_position_np)
-                odom_edges = np.array([[i, i + 1] for i in range(odom_poses_np.shape[0] - 1)])
+                odom_edges = np.array(
+                    [[i, i + 1] for i in range(odom_poses_np.shape[0] - 1)]
+                )
                 self.odom_traj.lines = o3d.utility.Vector2iVector(odom_edges)
 
                 if pgo_poses_np is None or self.before_pgo:
@@ -608,7 +608,7 @@ class MapVisualizer:
                     self.odom_traj.paint_uniform_color(BLUE)
 
                 if self.ego_view and cur_pose is not None:
-                    self.odom_traj.transform(np.linalg.inv(cur_pose))        
+                    self.odom_traj.transform(np.linalg.inv(cur_pose))
         else:
             self.odom_traj = o3d.geometry.LineSet()
 
@@ -621,7 +621,9 @@ class MapVisualizer:
             pgo_position_np = pgo_poses_np[:, :3, 3]
 
             self.pgo_traj.points = o3d.utility.Vector3dVector(pgo_position_np)
-            pgo_traj_edges = np.array([[i, i + 1] for i in range(pgo_poses_np.shape[0] - 1)])
+            pgo_traj_edges = np.array(
+                [[i, i + 1] for i in range(pgo_poses_np.shape[0] - 1)]
+            )
             self.pgo_traj.lines = o3d.utility.Vector2iVector(pgo_traj_edges)
             self.pgo_traj.paint_uniform_color(RED)
 

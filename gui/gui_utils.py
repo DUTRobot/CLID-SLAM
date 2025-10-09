@@ -2,10 +2,9 @@
 # @file      gui_utils.py
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 
-# This GUI is built on top of the great work of MonoGS (https://github.com/muskie82/MonoGS/blob/main/gui/gui_utils.py) 
+# This GUI is built on top of the great work of MonoGS (https://github.com/muskie82/MonoGS/blob/main/gui/gui_utils.py)
 
 import queue
-
 from utils.tools import feature_pca_torch
 from model.neural_points import NeuralPoints
 
@@ -13,7 +12,7 @@ from model.neural_points import NeuralPoints
 class VisPacket:
     def __init__(
         self,
-        frame_id = None,
+        frame_id=None,
         finish=False,
         current_pointcloud_xyz=None,
         current_pointcloud_rgb=None,
@@ -50,9 +49,12 @@ class VisPacket:
         self.finish = finish
 
     # the sorrounding map is also added here
-    def add_neural_points_data(self, neural_points: NeuralPoints, only_local_map: bool = True, 
-                               pca_color_on: bool = True):
-        
+    def add_neural_points_data(
+        self,
+        neural_points: NeuralPoints,
+        only_local_map: bool = True,
+        pca_color_on: bool = True,
+    ):
         if neural_points is not None:
             self.has_neural_points = True
             self.neural_points_data = {}
@@ -60,43 +62,74 @@ class VisPacket:
             self.neural_points_data["local_count"] = neural_points.local_count()
             self.neural_points_data["map_memory_mb"] = neural_points.cur_memory_mb
             self.neural_points_data["resolution"] = neural_points.resolution
-            
+
             if only_local_map:
                 self.neural_points_data["position"] = neural_points.local_neural_points
-                self.neural_points_data["orientation"] = neural_points.local_point_orientations
-                self.neural_points_data["geo_feature"] = neural_points.local_geo_features.detach()
+                self.neural_points_data["orientation"] = (
+                    neural_points.local_point_orientations
+                )
+                self.neural_points_data["geo_feature"] = (
+                    neural_points.local_geo_features.detach()
+                )
                 if neural_points.color_on:
-                    self.neural_points_data["color_feature"] = neural_points.local_color_features.detach()
+                    self.neural_points_data["color_feature"] = (
+                        neural_points.local_color_features.detach()
+                    )
                 self.neural_points_data["ts"] = neural_points.local_point_ts_update
-                self.neural_points_data["stability"] = neural_points.local_point_certainties
+                self.neural_points_data["stability"] = (
+                    neural_points.local_point_certainties
+                )
 
                 if pca_color_on:
-                    local_geo_feature_3d, _ = feature_pca_torch((self.neural_points_data["geo_feature"])[:-1], principal_components=neural_points.geo_feature_pca, down_rate=17)
+                    local_geo_feature_3d, _ = feature_pca_torch(
+                        (self.neural_points_data["geo_feature"])[:-1],
+                        principal_components=neural_points.geo_feature_pca,
+                        down_rate=17,
+                    )
                     self.neural_points_data["color_pca_geo"] = local_geo_feature_3d
 
                     if neural_points.color_on:
-                        local_color_feature_3d, _ = feature_pca_torch((self.neural_points_data["color_feature"])[:-1], principal_components=neural_points.color_feature_pca, down_rate=17)
-                        self.neural_points_data["color_pca_color"] = local_color_feature_3d
+                        local_color_feature_3d, _ = feature_pca_torch(
+                            (self.neural_points_data["color_feature"])[:-1],
+                            principal_components=neural_points.color_feature_pca,
+                            down_rate=17,
+                        )
+                        self.neural_points_data["color_pca_color"] = (
+                            local_color_feature_3d
+                        )
 
             else:
                 self.neural_points_data["position"] = neural_points.neural_points
-                self.neural_points_data["orientation"] = neural_points.point_orientations
+                self.neural_points_data["orientation"] = (
+                    neural_points.point_orientations
+                )
                 self.neural_points_data["geo_feature"] = neural_points.geo_features
                 if neural_points.color_on:
-                    self.neural_points_data["color_feature"] = neural_points.color_features
+                    self.neural_points_data["color_feature"] = (
+                        neural_points.color_features
+                    )
                 self.neural_points_data["ts"] = neural_points.point_ts_update
                 self.neural_points_data["stability"] = neural_points.point_certainties
                 if neural_points.local_mask is not None:
-                    self.neural_points_data["local_mask"] = neural_points.local_mask[:-1]
+                    self.neural_points_data["local_mask"] = neural_points.local_mask[
+                        :-1
+                    ]
 
                 if pca_color_on:
-                    geo_feature_3d, _ = feature_pca_torch(neural_points.geo_features[:-1], principal_components=neural_points.geo_feature_pca, down_rate=97)
+                    geo_feature_3d, _ = feature_pca_torch(
+                        neural_points.geo_features[:-1],
+                        principal_components=neural_points.geo_feature_pca,
+                        down_rate=97,
+                    )
                     self.neural_points_data["color_pca_geo"] = geo_feature_3d
 
                     if neural_points.color_on:
-                        color_feature_3d, _ = feature_pca_torch(neural_points.color_features[:-1], principal_components=neural_points.color_feature_pca, down_rate=97)
+                        color_feature_3d, _ = feature_pca_torch(
+                            neural_points.color_features[:-1],
+                            principal_components=neural_points.color_feature_pca,
+                            down_rate=97,
+                        )
                         self.neural_points_data["color_pca_color"] = color_feature_3d
-
 
     def add_scan(self, current_pointcloud_xyz=None, current_pointcloud_rgb=None):
         self.current_pointcloud_xyz = current_pointcloud_xyz
@@ -117,8 +150,9 @@ class VisPacket:
         self.mesh_faces = mesh_faces
         self.mesh_verts_rgb = mesh_verts_rgb
 
-    def add_traj(self, odom_poses=None, gt_poses=None, slam_poses=None, loop_edges=None):
-        
+    def add_traj(
+        self, odom_poses=None, gt_poses=None, slam_poses=None, loop_edges=None
+    ):
         self.odom_poses = odom_poses
         self.gt_poses = gt_poses
         self.slam_poses = slam_poses
@@ -158,6 +192,7 @@ class ControlPacket:
     sdf_res_m = 0.2
     cur_frame_id = 0
 
+
 class ParamsGUI:
     def __init__(
         self,
@@ -167,9 +202,9 @@ class ParamsGUI:
         local_map_default_on: bool = True,
         robot_default_on: bool = True,
         mesh_default_on: bool = False,
-        sdf_default_on: bool = False,   
+        sdf_default_on: bool = False,
         neural_point_map_default_on: bool = False,
-        neural_point_color_default_mode: int = 1, # 1: geo feature pca, 2: photo feature pca, 3: time, 4: height
+        neural_point_color_default_mode: int = 1,  # 1: geo feature pca, 2: photo feature pca, 3: time, 4: height
         neural_point_vis_down_rate: int = 1,
     ):
         self.q_main2vis = q_main2vis
@@ -183,4 +218,3 @@ class ParamsGUI:
         self.local_map_default_on = local_map_default_on
         self.neural_point_color_default_mode = neural_point_color_default_mode
         self.neural_point_vis_down_rate = neural_point_vis_down_rate
-        

@@ -1,4 +1,4 @@
-input_bag: '/home/jiang/hku1_converted.bag'
+input_bag: './hku1_converted.bag'
 output_folder: './dataset/hku/'
 imu_topic: '/livox/imu'
 lidar_topic: '/livox/pointcloud2'

@@ -12,14 +12,23 @@
   <a href="https://github.com/DUTRobot/CLID-SLAM/issues"><img alt="Issues" src="https://img.shields.io/github/issues/DUTRobot/CLID-SLAM?color=0088ff"/></a>
 </div>
 
+---
 
-![Mapping result](./assets/Mapping_result.png)
+**TL;DR:** CLID-SLAM is a tightly-coupled LiDAR-Inertial Odometry and dense Mapping framework, which utilizes the Iterated Error-State Extended Kalman Filter (IESEKF) to fuse Signed Distance Function (SDF) predictions and IMU data to improve robustness.
+
+## Abstract
+This letter proposes a novel scan-to-neural model matching, tightly-coupled LiDAR-inertial Simultaneous Localization and Mapping (SLAM) system, which can achieve more accurate state estimation and incrementally reconstruct the dense map. Different from the existing methods, the key insight of the proposed approach is that region-specific Signed Distance Function (SDF) estimations supervise the neural implicit representation to capture scene geometry, while SDF predictions and Inertial Measurement Unit (IMU) data are fused to strengthen the alignment of the LiDAR scan and the neural SDF map. As a result, the proposed approach achieves more robust and accurate state estimation with high-fidelity surface reconstruction. Specifically, an SDF supervision estimation method is proposed to generate more accurate SDF labels. Point-to-plane distances are utilized for planar regions and local nearest-neighbor distances are leveraged for non-planar areas, which reduces reconstruction artifacts and further significantly improves localization accuracy. Furthermore, we propose the first tightly-coupled LiDAR-inertial neural dense SLAM system that fuses SDF predictions and IMU data to align the received scan with the neural SDF map, thereby achieving more robust and accurate localization. Comparative experiments on multiple datasets are conducted to demonstrate the superior performance of the proposed method including the localization accuracy, robustness, and mapping quality.
+
+
 <div style="background-color:white; display:inline-block;">
   <img src="./assets/pipeline.png" />
 </div>
 
+---
 
-**TL;DR:** CLID-SLAM is a tightly-coupled LiDAR-Inertial Odometry and dense Mapping framework, which utilizes the Iterated Error-State Extended Kalman Filter (IESEKF) to fuse Signed Distance Function (SDF) predictions and IMU data to improve robustness.
+<div style="background-color:white; display:inline-block;">
+  <img src="./assets/Mapping_result.png" />
+</div>
 
 ## Installation
 

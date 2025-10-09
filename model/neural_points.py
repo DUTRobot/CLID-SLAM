@@ -4,7 +4,6 @@
 # Copyright (c) 2024 Yue Pan, all rights reserved
 
 import sys
-
 import matplotlib.cm as cm
 import numpy as np
 import open3d as o3d
@@ -12,7 +11,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from rich import print
-
 from utils.config import Config
 from utils.tools import (
     apply_quaternion_rotation,
@@ -28,7 +26,6 @@ from utils.tools import (
 
 class NeuralPoints(nn.Module):
     def __init__(self, config: Config) -> None:
-
         super().__init__()
 
         self.config = config
@@ -52,12 +49,12 @@ class NeuralPoints(nn.Module):
         self.device = config.device
         self.dtype = config.dtype
         self.idx_dtype = torch.int64
-        
+
         self.resolution = config.voxel_size_m
 
         self.buffer_size = config.buffer_size
 
-        self.temporal_local_map_on = True # false for the pure localization mode
+        self.temporal_local_map_on = True  # false for the pure localization mode
         self.local_map_radius = self.config.local_map_radius
         self.diff_travel_dist_local = (
             self.config.local_map_radius * self.config.local_map_travel_dist_ratio
@@ -104,10 +101,10 @@ class NeuralPoints(nn.Module):
         else:
             self.color_features = None
             self.color_on = False
-        
+
         # feature pca
         self.geo_feature_pca = self.color_feature_pca = None
-        
+
         # here, the ts represent the actually processed frame id (not neccessarily the frame id of the dataset)
         self.point_ts_create = torch.empty(
             (0), device=self.device, dtype=torch.int
@@ -163,21 +160,32 @@ class NeuralPoints(nn.Module):
             print("# Local  neural point: %d" % (self.local_count()))
         neural_point_count = self.count()
         # feature plus neural point position and orientation
-        point_dim = self.geo_feature_dim + 3 + 4    
+        point_dim = self.geo_feature_dim + 3 + 4
         if self.color_features is not None:
             point_dim += self.color_feature_dim  # also include the color feature
-        self.cur_memory_mb = neural_point_count * point_dim * 4 / 1024 / 1024  # as float32 # TODO: add memory consumption of gausssian parameters
+        self.cur_memory_mb = (
+            neural_point_count * point_dim * 4 / 1024 / 1024
+        )  # as float32 # TODO: add memory consumption of gausssian parameters
         if verbose:
-            print("Current map memory consumption: {:.3f} MB".format(self.cur_memory_mb))
+            print(
+                "Current map memory consumption: {:.3f} MB".format(self.cur_memory_mb)
+            )
         if record_footprint:
             self.memory_footprint.append(self.cur_memory_mb)
 
     def compute_feature_principle_components(self, down_rate: int = 1):
-        _, self.geo_feature_pca = feature_pca_torch((self.local_geo_features.detach())[:-1], down_rate=down_rate, project_data=False)
+        _, self.geo_feature_pca = feature_pca_torch(
+            (self.local_geo_features.detach())[:-1],
+            down_rate=down_rate,
+            project_data=False,
+        )
 
         if self.color_features is not None:
-            _, self.color_feature_pca = feature_pca_torch((self.local_color_features.detach())[:-1], down_rate=down_rate, project_data=False)
-
+            _, self.color_feature_pca = feature_pca_torch(
+                (self.local_color_features.detach())[:-1],
+                down_rate=down_rate,
+                project_data=False,
+            )
 
     def get_neural_points_o3d(
         self,
@@ -185,7 +193,6 @@ class NeuralPoints(nn.Module):
         color_mode: int = -1,
         random_down_ratio: int = 1,
     ):
-
         ratio_vis = 1.5
         # TODO: visualize orientation as normal
 
@@ -219,27 +226,33 @@ class NeuralPoints(nn.Module):
                     :-1:random_down_ratio
                 ].detach()
 
-            geo_feature_3d, _ = feature_pca_torch(neural_features_vis, principal_components=self.geo_feature_pca) # [0,1]
+            geo_feature_3d, _ = feature_pca_torch(
+                neural_features_vis, principal_components=self.geo_feature_pca
+            )  # [0,1]
             geo_feature_rgb = geo_feature_3d.cpu().numpy().astype(np.float64)
             neural_pc_o3d.colors = o3d.utility.Vector3dVector(geo_feature_rgb)
-            
+
             # neural_features_vis = F.normalize(neural_features_vis, p=2, dim=1)
             # neural_features_np = neural_features_vis.cpu().numpy().astype(np.float64)
             # neural_pc_o3d.colors = o3d.utility.Vector3dVector(
             #     neural_features_np[:, 0:3] * ratio_vis
             # )
 
-        elif color_mode == 1 and (self.color_feature_pca is not None) and (self.color_features is not None):  # "color_feature"
+        elif (
+            color_mode == 1
+            and (self.color_feature_pca is not None)
+            and (self.color_features is not None)
+        ):  # "color_feature"
             if query_global:
-                neural_features_vis = self.color_features[
-                    :-1:random_down_ratio
-                ]
+                neural_features_vis = self.color_features[:-1:random_down_ratio]
             else:
                 neural_features_vis = self.local_color_features[
                     :-1:random_down_ratio
                 ].detach()
 
-            color_feature_3d, _ = feature_pca_torch(neural_features_vis, principal_components=self.color_feature_pca) # [0,1]
+            color_feature_3d, _ = feature_pca_torch(
+                neural_features_vis, principal_components=self.color_feature_pca
+            )  # [0,1]
             color_feature_rgb = color_feature_3d.cpu().numpy().astype(np.float64)
             neural_pc_o3d.colors = o3d.utility.Vector3dVector(color_feature_rgb)
 
@@ -344,7 +357,7 @@ class NeuralPoints(nn.Module):
 
             update_mask = (hash_idx == -1) | (dist2 > 3 * cur_resolution**2)
 
-            if self.temporal_local_map_on: # only done for the slam mode
+            if self.temporal_local_map_on:  # only done for the slam mode
                 # the voxel is not occupied before or the case when hash collision happens
                 # delta_t = (cur_ts - self.point_ts_create[hash_idx]) # use time diff
                 delta_travel_dist = (
@@ -353,7 +366,9 @@ class NeuralPoints(nn.Module):
                 )  # use travel dist diff
 
                 # the last time mask is necessary
-                update_mask = update_mask | (delta_travel_dist > self.diff_travel_dist_local)
+                update_mask = update_mask | (
+                    delta_travel_dist > self.diff_travel_dist_local
+                )
         else:
             update_mask = torch.ones(
                 hash_idx.shape, dtype=torch.bool, device=self.device
@@ -440,7 +455,7 @@ class NeuralPoints(nn.Module):
             diff_ts_local: the time difference to filter the neural points, int
             reboot_map: whether to reboot the map, bool, if true, we will set the local map with only the neural points with timestamps after the roboot points
         """
-    # TODO: not very efficient, optimize the code
+        # TODO: not very efficient, optimize the code
 
         self.cur_ts = cur_ts
         self.max_ts = max(self.max_ts, cur_ts)
@@ -453,36 +468,44 @@ class NeuralPoints(nn.Module):
             else:
                 point_ts_used = self.point_ts_create
 
-            if use_travel_dist: # self.travel_dist as torch tensor
+            if use_travel_dist:  # self.travel_dist as torch tensor
                 delta_travel_dist = torch.abs(
                     self.travel_dist[cur_ts] - self.travel_dist[point_ts_used]
                 )
-                time_mask = (delta_travel_dist < self.diff_travel_dist_local)
+                time_mask = delta_travel_dist < self.diff_travel_dist_local
             else:  # use delta_t
                 delta_t = torch.abs(cur_ts - point_ts_used)
-                time_mask = (delta_t < diff_ts_local) 
+                time_mask = delta_t < diff_ts_local
 
             if reboot_map:
                 time_mask = time_mask & (point_ts_used >= self.reboot_ts)
 
-            if torch.sum(time_mask) < 100: # not enough neural points in the temporal window, we set all true to avoid error
-                time_mask = torch.ones(self.count(), dtype=torch.bool, device=self.device) # all true
-        
+            if (
+                torch.sum(time_mask) < 100
+            ):  # not enough neural points in the temporal window, we set all true to avoid error
+                time_mask = torch.ones(
+                    self.count(), dtype=torch.bool, device=self.device
+                )  # all true
+
         else:
-            time_mask = torch.ones(self.count(), dtype=torch.bool, device=self.device) # all true
+            time_mask = torch.ones(
+                self.count(), dtype=torch.bool, device=self.device
+            )  # all true
 
         # speed up by calulating distance only with the t filtered points
         masked_vec2sensor = self.neural_points[time_mask] - sensor_position
         masked_dist2sensor = torch.sum(masked_vec2sensor**2, dim=-1)  # dist square
 
-        dist_mask = (masked_dist2sensor < self.local_map_radius**2)
-        time_mask_idx = torch.nonzero(time_mask).squeeze() # True index
+        dist_mask = masked_dist2sensor < self.local_map_radius**2
+        time_mask_idx = torch.nonzero(time_mask).squeeze()  # True index
 
-        local_mask_idx = time_mask_idx[dist_mask] # True index
+        local_mask_idx = time_mask_idx[dist_mask]  # True index
 
-        local_mask = torch.full((time_mask.shape), False, dtype=torch.bool, device=self.device)
+        local_mask = torch.full(
+            (time_mask.shape), False, dtype=torch.bool, device=self.device
+        )
 
-        local_mask[local_mask_idx] = True 
+        local_mask[local_mask_idx] = True
 
         self.local_neural_points = self.neural_points[local_mask]
         self.local_point_orientations = self.point_orientations[local_mask]
@@ -496,7 +519,7 @@ class NeuralPoints(nn.Module):
 
         # if Flase (not in the local map), the mapping get an idx as -1
         global2local = torch.full_like(local_mask, -1).long()
-        
+
         local_indices = torch.nonzero(local_mask).flatten()
         local_point_count = local_indices.size(0)
         global2local[local_indices] = torch.arange(
@@ -669,9 +692,9 @@ class NeuralPoints(nn.Module):
         )  # [N, K] # Inverse distance weighting (IDW), distance square
 
         weight_vector[~valid_mask] = 0.0  # pad for invalid voxels
-        weight_vector[
-            nn_counts == 0
-        ] = eps  # all 0 would cause NaN during normalization
+        weight_vector[nn_counts == 0] = (
+            eps  # all 0 would cause NaN during normalization
+        )
 
         # apply the normalization of weight
         weight_row_sums = torch.sum(weight_vector, dim=1).unsqueeze(1)
@@ -745,7 +768,7 @@ class NeuralPoints(nn.Module):
             queried_certainty,
         )
 
-    def prune_map(self, prune_certainty_thre, min_prune_count = 500, global_prune = False):
+    def prune_map(self, prune_certainty_thre, min_prune_count=500, global_prune=False):
         """
         prune inactive uncertain neural points
         Input:
@@ -800,9 +823,7 @@ class NeuralPoints(nn.Module):
         self.after_pgo = True
 
         if self.config.use_mid_ts:
-            used_ts = (
-                (self.point_ts_create + self.point_ts_update) / 2
-            ).int() 
+            used_ts = ((self.point_ts_create + self.point_ts_update) / 2).int()
         else:
             used_ts = self.point_ts_create
 
@@ -843,9 +864,7 @@ class NeuralPoints(nn.Module):
         # also update the timestep of neural points during merging
         if with_ts:
             if self.config.use_mid_ts:
-                ts_used = (
-                    (self.point_ts_create + self.point_ts_update) / 2
-                ).int()
+                ts_used = ((self.point_ts_create + self.point_ts_update) / 2).int()
             else:
                 ts_used = self.point_ts_create
             ts_diff = torch.abs(ts_used - cur_ts).float()
@@ -905,7 +924,9 @@ class NeuralPoints(nn.Module):
             self.reset_local_map(sensor_position, sensor_orientation, cur_ts)
 
         if not kept_points:  # merged
-            self.record_memory(verbose=(not self.silence)) # show the updated memory after merging
+            self.record_memory(
+                verbose=(not self.silence)
+            )  # show the updated memory after merging
 
     def set_search_neighborhood(
         self, num_nei_cells: int = 1, search_alpha: float = 1.0
@@ -1008,9 +1029,7 @@ class NeuralPoints(nn.Module):
 
         return dist2, neighb_idx
 
-    def query_certainty(
-        self, query_points: torch.Tensor
-    ):  
+    def query_certainty(self, query_points: torch.Tensor):
         """
         a faster way to get the certainty at a batch of query points
         Input:
@@ -1074,7 +1093,6 @@ class NeuralPoints(nn.Module):
 # Borrow from Louis's LocNDF
 # https://github.com/PRBonn/LocNDF
 class PositionalEncoder(nn.Module):
-
     # out_dim = in_dimnesionality * (2 * bands + 1)
     def __init__(self, config: Config):
         super().__init__()
@@ -1089,7 +1107,6 @@ class PositionalEncoder(nn.Module):
         # self.num_bands = floor(feature_size/dimensionality/2)
 
     def forward(self, x):
-
         # print(x)
         x = x[..., : self.dimensionality, None]
         device, dtype, orig_x = x.device, x.dtype, x

@@ -8,16 +8,14 @@
 
 import math
 import sys
-
+import torch
+import wandb
 import matplotlib.cm as cm
 import numpy as np
 import open3d as o3d
-import torch
 import torch.nn.functional as F
-import wandb
 from rich import print
 from tqdm import tqdm
-
 from model.decoder import Decoder
 from model.neural_points import NeuralPoints
 from model.local_point_cloud_map import LocalPointCloudMap
