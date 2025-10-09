@@ -2,9 +2,7 @@
 # @file      data_sampler.py
 # @author    Junlong Jiang     [jiangjunlong@mail.dlut.edu.cn]
 # Copyright (c) 2025 Junlong Jiang, all rights reserved
-
 import torch
-
 from model.local_point_cloud_map import LocalPointCloudMap
 from utils.config import Config
 from utils.tools import transform_torch

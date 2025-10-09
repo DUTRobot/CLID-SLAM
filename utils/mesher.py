@@ -4,14 +4,12 @@
 # Copyright (c) 2024 Yue Pan, all rights reserved
 
 import math
-
 import matplotlib.cm as cm
 import numpy as np
 import open3d as o3d
 import skimage.measure
 import torch
 from tqdm import tqdm
-
 from model.decoder import Decoder
 from model.neural_points import NeuralPoints
 from utils.config import Config

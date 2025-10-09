@@ -2,7 +2,6 @@
 # @file      tools.py
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 # Copyright (c) 2024 Yue Pan, all rights reserved
-
 import getpass
 import json
 import multiprocessing
@@ -12,8 +11,6 @@ import shutil
 import subprocess
 import sys
 import time
-import warnings
-import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import List

@@ -15,7 +15,7 @@ from typing import List, Tuple
 from plyfile import PlyData, PlyElement
 from multiprocessing import Process, Queue
 
-pc2.sys = sys  # 注入 sys，使其内部引用有效
+pc2.sys = sys
 
 
 G_M_S2 = 9.81  # Gravitational constant in m/s^2

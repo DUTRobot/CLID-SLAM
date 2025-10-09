@@ -2,7 +2,6 @@
 # @file      loss.py
 # @author    Yue Pan     [yue.pan@igg.uni-bonn.de]
 # Copyright (c) 2024 Yue Pan, all rights reserved
-
 import torch
 import torch.nn as nn
 
@@ -43,7 +42,7 @@ def color_diff_loss(pred, label, weight, weighted=False, l2_loss=False):
 
 # used by our approach
 def sdf_bce_loss(pred, label, sigma, weight, weighted=False, bce_reduction="mean"):
-    """ Calculate the binary cross entropy (BCE) loss for SDF supervision
+    """Calculate the binary cross entropy (BCE) loss for SDF supervision
     Args:
         pred (torch.tenosr): batch of predicted SDF values
         label (torch.tensor): batch of the target SDF values
@@ -58,7 +57,7 @@ def sdf_bce_loss(pred, label, sigma, weight, weighted=False, bce_reduction="mean
         loss_bce = nn.BCEWithLogitsLoss(reduction=bce_reduction, weight=weight)
     else:
         loss_bce = nn.BCEWithLogitsLoss(reduction=bce_reduction)
-    label_op = torch.sigmoid(label / sigma) # occupancy prob
+    label_op = torch.sigmoid(label / sigma)  # occupancy prob
     loss = loss_bce(pred / sigma, label_op)
     return loss
 

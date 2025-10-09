@@ -1,22 +1,16 @@
-import numpy as np
-
-
 class LabelDataConverter:
     """Convert .label binary data to instance id and rgb"""
 
     def __init__(self, labelscan):
-
         self.convertdata(labelscan)
 
     def convertdata(self, labelscan):
-
         self.semantic_id = []
         self.rgb_id = []
         self.instance_id = []
         self.rgb_arr_id = []
 
         for counting in range(len(labelscan)):
-
             sem_id = int(labelscan[counting]) & 0xFFFF  # lower 16 bit
             rgb, rgb_arr = self.get_sem_rgb(sem_id)
             instance_id = int(labelscan[counting]) >> 16  # higher 16 bit
