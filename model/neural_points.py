@@ -518,7 +518,7 @@ class NeuralPoints(nn.Module):
         self.local_mask = local_mask
 
         # if Flase (not in the local map), the mapping get an idx as -1
-        global2local = torch.full_like(local_mask, -1).long()
+        global2local = torch.full_like(local_mask, -1, dtype=torch.long)
 
         local_indices = torch.nonzero(local_mask).flatten()
         local_point_count = local_indices.size(0)
