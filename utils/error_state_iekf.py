@@ -55,7 +55,7 @@ class StateIkfom:
 class InputIkfom:
     """输入向量类定义，用于表示陀螺仪和加速度计的测量值。"""
 
-    def __init__(self, dtype, acc=np.array, gyro=np.array):
+    def __init__(self, dtype, acc: np.array, gyro: np.array):
         self.dtype = dtype
         self.acc = torch.tensor(acc, dtype=self.dtype)
         self.gyro = torch.tensor(gyro, dtype=self.dtype)
@@ -127,7 +127,6 @@ class IEKFOM:
         """计算状态转移函数的雅可比矩阵"""
         # omega_ = in_.gyro - s.bg
         acc_ = in_.acc - s.ba
-
         df_dx = torch.eye(18, dtype=self.tran_dtype)
         I_dt = torch.eye(3, dtype=self.tran_dtype) * dt
         # df_dx[0:3, 0:3] = so3Exp(-omega_ * dt)

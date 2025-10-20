@@ -19,7 +19,7 @@ class LocalPointCloudMap:
 
         self.buffer_pt_index = -torch.ones(
             self.buffer_size, dtype=self.idx_dtype, device=self.device
-        )  # 哈希表
+        )
         self.local_point_cloud_map = torch.empty(
             (0, 3), dtype=torch.float32, device=self.device
         )
@@ -107,17 +107,15 @@ class LocalPointCloudMap:
         # 为了避免爆显存，采用分批处理的办法
         for n in range(iter_n):
             head, tail = n * bs, min((n + 1) * bs, point_num)
-            batch_points = points[head:tail, :]
-            batch_coords = (batch_points / self.resolution).floor().to(self.primes)
+            batch_pts = points[head:tail, :]
+            batch_coords = (batch_pts / self.resolution).floor().to(self.primes)
             batch_neighbord_cells = batch_coords[..., None, :] + self.neighbor_idx
             batch_hash = torch.fmod(
                 (batch_neighbord_cells * self.primes).sum(-1), self.buffer_size
             )
             batch_neighb_idx = self.buffer_pt_index[batch_hash]
             batch_neighb_pts = self.local_point_cloud_map[batch_neighb_idx]
-            batch_dist = torch.norm(
-                batch_neighb_pts - batch_points.view(-1, 1, 3), dim=-1
-            )
+            batch_dist = torch.norm(batch_neighb_pts - batch_pts.view(-1, 1, 3), dim=-1)
             batch_dist = torch.where(
                 batch_neighb_idx == -1, self.max_valid_range, batch_dist
             )
@@ -130,26 +128,22 @@ class LocalPointCloudMap:
             batch_knn_points = torch.gather(batch_neighb_pts, 1, batch_min_idx_expanded)
             valid_fit_mask = batch_sdf_abs[:, 3] < self.max_valid_range
             valid_batch_knn_points = batch_knn_points[valid_fit_mask]
-            unit_normal_vector = torch.zeros_like(batch_points)
-            plane_constant = torch.zeros(
-                batch_points.size(0), device=batch_points.device
-            )
+            normal = torch.zeros_like(batch_pts)
+            plane_constant = torch.zeros(batch_pts.size(0), device=batch_pts.device)
             fit_success = torch.zeros(
-                batch_points.size(0), dtype=torch.bool, device=batch_points.device
+                batch_pts.size(0), dtype=torch.bool, device=batch_pts.device
             )
 
-            valid_unit_normal_vector, valid_plane_constant, valid_fit_success = (
-                estimate_plane(valid_batch_knn_points)
+            valid_normal, valid_plane_constant, valid_fit_success = estimate_plane(
+                valid_batch_knn_points
             )
-            unit_normal_vector[valid_fit_mask] = valid_unit_normal_vector
+            normal[valid_fit_mask] = valid_normal
             plane_constant[valid_fit_mask] = valid_plane_constant
             fit_success[valid_fit_mask] = valid_fit_success
 
             fit_success &= batch_sdf_abs[:, 3] < self.max_valid_range  # 平面拟合失败
             surface_mask[head:tail] &= batch_sdf_abs[:, 0] < self.max_valid_range
-            distance = torch.abs(
-                torch.sum(unit_normal_vector * batch_points, dim=1) + plane_constant
-            )
+            distance = torch.abs(torch.sum(normal * batch_pts, dim=1) + plane_constant)
             sdf_abs[head:tail][fit_success] = distance[fit_success]
             sdf_abs[head:tail][~fit_success] = batch_sdf_abs[:, 0][~fit_success]
 
@@ -189,20 +183,19 @@ def estimate_plane(
     )  # Fit planes to the input points.
 
     # Initialize normal vectors with zeros.
-    unit_normal_vector = torch.zeros((m, 3), dtype=points.dtype, device=points.device)
+    normal = torch.zeros((m, 3), dtype=points.dtype, device=points.device)
 
     valid_mask = is_valid_planes(singular_values, eta_threshold)
     normal_vector = normal_vector[valid_mask]
-    unit_normal_vector[valid_mask] = normal_vector
-    plane_constant = -1.0 * torch.sum(unit_normal_vector * centroids, dim=1)
+    normal[valid_mask] = normal_vector
+    plane_constant = -1.0 * torch.sum(normal * centroids, dim=1)
 
     # Compute the distance of each point to its respective plane.
-    # distances = torch.abs((points @ unit_normal_vector.unsqueeze(-1)).squeeze() + plane_constant.unsqueeze(-1))
+    # distances = torch.abs((points @ normal.unsqueeze(-1)).squeeze() + plane_constant.unsqueeze(-1))
     distances = torch.abs(
-        torch.bmm(points, unit_normal_vector.unsqueeze(-1)).squeeze()
-        + plane_constant.unsqueeze(-1)
+        torch.bmm(points, normal.unsqueeze(-1)).squeeze() + plane_constant.unsqueeze(-1)
     )
     fit_success = torch.max(distances, dim=1).values <= threshold
     mask = fit_success & valid_mask
 
-    return unit_normal_vector, plane_constant, mask
+    return normal, plane_constant, mask
