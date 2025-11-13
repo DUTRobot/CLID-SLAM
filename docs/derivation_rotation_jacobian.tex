@@ -1,0 +1,37 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb, bm}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+	
+	\begin{align}
+		\frac{\partial {}^G\widehat{\mathbf p}_{j}^\kappa}{\partial \delta \bm \theta} 
+		&= \frac{\partial\left(\widehat{\mathbf{R}}^\kappa_{I_k} \, {}^{I_k}{\mathbf p}_{j}\right)}{\partial \delta \bm \theta} 
+		\tag{1} \\[4pt]
+		&= \lim_{\Delta (\delta \bm \theta) \rightarrow 0} 
+		\frac{\widehat{\mathbf{R}}^\kappa_{I_k} \, \text{Exp}\!\left(\Delta (\delta \bm \theta)\right)  {}^{I_k}{\mathbf p}_{j} - \widehat{\mathbf{R}}^\kappa_{I_k} \, {}^{I_k}{\mathbf p}_{j}}{\Delta (\delta \bm \theta)}
+		\tag{2} \\[4pt]
+		&= \lim_{\Delta (\delta \bm \theta) \rightarrow 0} 
+		\frac{\widehat{\mathbf{R}}^\kappa_{I_k} \left( \bm I + \left[\Delta (\delta \bm \theta)\right]_{\times} \right) {}^{I_k}{\mathbf p}_{j} - \widehat{\mathbf{R}}^\kappa_{I_k} \, {}^{I_k}{\mathbf p}_{j}}{\Delta (\delta \bm \theta)}
+		\tag{3} \\[4pt]
+		&= \lim_{\Delta (\delta \bm \theta) \rightarrow 0} 
+		\frac{\widehat{\mathbf{R}}^\kappa_{I_k} \left[\Delta (\delta \bm \theta)\right]_{\times} {}^{I_k}{\mathbf p}_{j}}{\Delta (\delta \bm \theta)}
+		\tag{4} \\[4pt]
+		&= \lim_{\Delta (\delta \bm \theta) \rightarrow 0} 
+		\frac{\widehat{\mathbf{R}}^\kappa_{I_k} \left( \Delta (\delta \bm \theta) \times {}^{I_k}{\mathbf p}_{j}\right)}{\Delta (\delta \bm \theta)}
+		\tag{5} \\[4pt]
+		&= \lim_{\Delta (\delta \bm \theta) \rightarrow 0} 
+		\frac{-\,\widehat{\mathbf{R}}^\kappa_{I_k} \left({}^{I_k}{\mathbf p}_{j} \times \Delta (\delta \bm \theta)\right)}{\Delta (\delta \bm \theta)}
+		\tag{6} \\[4pt]
+		&= \lim_{\Delta (\delta \bm \theta) \rightarrow 0} 
+		\frac{-\,\widehat{\mathbf{R}}^\kappa_{I_k} \left(\left[{}^{I_k}{\mathbf p}_{j}\right]_\times \Delta (\delta \bm \theta)\right)}{\Delta (\delta \bm \theta)}
+		\tag{7} \\[4pt]
+		&= -\,\widehat{\mathbf{R}}^\kappa_{I_k} \left[{}^{I_k}{\mathbf p}_{j}\right]_\times
+		\tag{8} \\[4pt]
+		&= -\,\widehat{\mathbf{R}}^\kappa_{I_k} 
+		\left[{}^I \mathbf{R}_{L} \, {}^{L_k}{\mathbf p}_{j} + {}^I \mathbf{p}_{L}\right]_\times
+		\tag{9}
+	\end{align}
+	
+\end{document}

@@ -80,7 +80,14 @@ Run:
 ## 3. How to run it
 ```bash
 python3 slam.py ./config/run_ncd128.yaml
+
 ```
-## 4. Acknowledgements
+
+## 4. Supplementary Derivation
+
+Detailed rotation Jacobian derivation is provided in `derivation_rotation_jacobian.pdf`.
+
+
+## 5. Acknowledgements
 
 This project builds on [**PIN-SLAM**](https://github.com/PRBonn/PIN_SLAM) by [**PRBonn/YuePanEdward**](https://github.com/YuePanEdward). We gratefully acknowledge their valuable contributions.
